@@ -30,7 +30,7 @@ impl McpTool for PearlGrowingTool {
         json!({
             "type": "object",
             "properties": {
-                "seed_paper_ids": {
+                "seedPaperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Initial seed paper IDs"
@@ -54,13 +54,13 @@ impl McpTool for PearlGrowingTool {
                     "type": "boolean",
                     "default": true
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["seed_paper_ids"]
+            "required": ["seedPaperIds"]
         })
     }
 
@@ -155,7 +155,7 @@ impl McpTool for PearlGrowingTool {
                         growth_log.push(json!({
                             "iteration": iteration + 1,
                             "strategy": "authors",
-                            "author_id": author_id,
+                            "authorId": author_id,
                             "new": new_count
                         }));
                     }
@@ -347,15 +347,15 @@ impl McpTool for OrcidAuthorLookupTool {
                     "type": "string",
                     "description": "ORCID iD (e.g., '0000-0002-1825-0097')"
                 },
-                "include_papers": {
+                "includePapers": {
                     "type": "boolean",
                     "default": false
                 },
-                "max_papers": {
+                "maxPapers": {
                     "type": "integer",
                     "default": 100
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"

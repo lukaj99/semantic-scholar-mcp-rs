@@ -33,33 +33,33 @@ impl McpTool for ExhaustiveSearchTool {
                     "type": "string",
                     "description": "Search query (e.g., 'transformer attention mechanisms')"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Minimum publication year"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "Maximum publication year"
                 },
-                "fields_of_study": {
+                "fieldsOfStudy": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Filter by fields (e.g., ['Computer Science'])"
                 },
-                "min_citations": {
+                "minCitations": {
                     "type": "integer",
                     "description": "Minimum citation count"
                 },
-                "open_access_only": {
+                "openAccessOnly": {
                     "type": "boolean",
                     "default": false
                 },
-                "max_results": {
+                "maxResults": {
                     "type": "integer",
                     "default": 100,
                     "description": "Maximum papers to return (-1 for unlimited)"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -165,12 +165,12 @@ impl McpTool for RecommendationsTool {
         json!({
             "type": "object",
             "properties": {
-                "positive_paper_ids": {
+                "positivePaperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Paper IDs to use as positive examples"
                 },
-                "negative_paper_ids": {
+                "negativePaperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Paper IDs to avoid"
@@ -179,13 +179,13 @@ impl McpTool for RecommendationsTool {
                     "type": "integer",
                     "default": 100
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["positive_paper_ids"]
+            "required": ["positivePaperIds"]
         })
     }
 
@@ -234,7 +234,7 @@ impl McpTool for CitationSnowballTool {
         json!({
             "type": "object",
             "properties": {
-                "seed_paper_ids": {
+                "seedPaperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Starting paper IDs"
@@ -250,11 +250,11 @@ impl McpTool for CitationSnowballTool {
                     "minimum": 1,
                     "maximum": 3
                 },
-                "max_per_paper": {
+                "maxPerPaper": {
                     "type": "integer",
                     "default": 100
                 },
-                "min_citations": {
+                "minCitations": {
                     "type": "integer",
                     "default": 0,
                     "minimum": 0,
@@ -264,13 +264,13 @@ impl McpTool for CitationSnowballTool {
                     "type": "boolean",
                     "default": true
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["seed_paper_ids"]
+            "required": ["seedPaperIds"]
         })
     }
 
@@ -411,20 +411,20 @@ impl McpTool for BulkBooleanSearchTool {
                     "type": "string",
                     "description": "Boolean query: +term -term |term \"phrase\" term* term~2"
                 },
-                "fields_of_study": {
+                "fieldsOfStudy": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Filter by fields of study"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Minimum publication year"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "Maximum publication year"
                 },
-                "min_citations": {
+                "minCitations": {
                     "type": "integer",
                     "description": "Minimum citation count"
                 },
@@ -432,12 +432,12 @@ impl McpTool for BulkBooleanSearchTool {
                     "type": "string",
                     "description": "Filter by venue name"
                 },
-                "publication_types": {
+                "publicationTypes": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "JournalArticle, Conference, Review, etc."
                 },
-                "open_access_only": {
+                "openAccessOnly": {
                     "type": "boolean",
                     "default": false
                 },
@@ -445,12 +445,12 @@ impl McpTool for BulkBooleanSearchTool {
                     "type": "string",
                     "description": "Sort: citationCount:desc, publicationDate:asc, paperId:asc"
                 },
-                "max_results": {
+                "maxResults": {
                     "type": "integer",
                     "default": 1000,
                     "description": "Maximum papers to return"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -579,7 +579,7 @@ impl McpTool for SnippetSearchTool {
                     "type": "string",
                     "description": "Plain text search query"
                 },
-                "paper_ids": {
+                "paperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Filter to specific papers (up to ~100)"
@@ -589,17 +589,17 @@ impl McpTool for SnippetSearchTool {
                     "items": {"type": "string"},
                     "description": "Filter by author names (fuzzy match, max 10)"
                 },
-                "fields_of_study": {
+                "fieldsOfStudy": {
                     "type": "array",
                     "items": {"type": "string"}
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer"
                 },
-                "min_citations": {
+                "minCitations": {
                     "type": "integer"
                 },
                 "venue": {
@@ -610,7 +610,7 @@ impl McpTool for SnippetSearchTool {
                     "default": 100,
                     "maximum": 1000
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"

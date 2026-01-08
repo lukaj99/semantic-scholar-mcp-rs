@@ -31,11 +31,11 @@ impl McpTool for ResearchTrendsTool {
                     "type": "string",
                     "description": "Research topic to analyze"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Start year for analysis"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "End year for analysis"
                 },
@@ -44,17 +44,17 @@ impl McpTool for ResearchTrendsTool {
                     "enum": ["year", "quarter"],
                     "default": "year"
                 },
-                "max_papers_per_period": {
+                "maxPapersPerPeriod": {
                     "type": "integer",
                     "default": 100
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["query", "year_start", "year_end"]
+            "required": ["query", "yearStart", "yearEnd"]
         })
     }
 
@@ -177,8 +177,8 @@ impl McpTool for ResearchTrendsTool {
             }
             ResponseFormat::Json => Ok(serde_json::to_string(&json!({
                 "query": params.query,
-                "year_start": params.year_start,
-                "year_end": params.year_end,
+                "yearStart": params.year_start,
+                "yearEnd": params.year_end,
                 "total_papers": all_papers.len(),
                 "trends": trends
             }))?),
@@ -204,29 +204,29 @@ impl McpTool for VenueAnalyticsTool {
         json!({
             "type": "object",
             "properties": {
-                "venue_query": {
+                "venueQuery": {
                     "type": "string",
                     "description": "Venue name (e.g., 'NeurIPS', 'Nature Medicine')"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Start year for analysis"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "End year for analysis"
                 },
-                "max_papers": {
+                "maxPapers": {
                     "type": "integer",
                     "default": 500
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["venue_query"]
+            "required": ["venueQuery"]
         })
     }
 
@@ -349,9 +349,9 @@ impl McpTool for VenueAnalyticsTool {
                 Ok(output)
             }
             ResponseFormat::Json => Ok(serde_json::to_string(&json!({
-                "venue_query": params.venue_query,
-                "year_start": params.year_start,
-                "year_end": params.year_end,
+                "venueQuery": params.venue_query,
+                "yearStart": params.year_start,
+                "yearEnd": params.year_end,
                 "statistics": {
                     "total_papers": total_papers,
                     "total_citations": total_citations,

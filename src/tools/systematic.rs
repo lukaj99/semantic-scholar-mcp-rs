@@ -36,23 +36,23 @@ impl McpTool for PrismaSearchTool {
                     "items": {"type": "string"},
                     "description": "List of search queries to run"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Minimum publication year"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "Maximum publication year"
                 },
-                "min_citations": {
+                "minCitations": {
                     "type": "integer",
                     "description": "Minimum citation count"
                 },
-                "max_results_per_query": {
+                "maxResultsPerQuery": {
                     "type": "integer",
                     "default": 500
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -200,21 +200,21 @@ impl McpTool for ScreeningExportTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_ids": {
+                "paperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Paper IDs to export"
                 },
-                "include_abstract": {
+                "includeAbstract": {
                     "type": "boolean",
                     "default": true
                 },
-                "include_tldr": {
+                "includeTldr": {
                     "type": "boolean",
                     "default": false
                 }
             },
-            "required": ["paper_ids"]
+            "required": ["paperIds"]
         })
     }
 
@@ -252,7 +252,7 @@ impl McpTool for ScreeningExportTool {
             }
 
             let mut row = json!({
-                "paper_id": paper.paper_id,
+                "paperId": paper.paper_id,
                 "title": paper.title_or_default(),
                 "authors": author_str,
                 "year": paper.year,
@@ -338,7 +338,7 @@ impl McpTool for PrismaFlowDiagramTool {
                         "reports_included": {"type": "integer"}
                     }
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"

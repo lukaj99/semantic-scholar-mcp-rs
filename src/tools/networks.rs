@@ -27,7 +27,7 @@ impl McpTool for AuthorNetworkTool {
         json!({
             "type": "object",
             "properties": {
-                "author_id": {
+                "authorId": {
                     "type": "string",
                     "description": "Semantic Scholar author ID"
                 },
@@ -38,23 +38,23 @@ impl McpTool for AuthorNetworkTool {
                     "maximum": 2,
                     "description": "Collaboration depth (1 = direct, 2 = collaborators of collaborators)"
                 },
-                "min_shared_papers": {
+                "minSharedPapers": {
                     "type": "integer",
                     "default": 2,
                     "description": "Minimum shared papers to include a collaborator"
                 },
-                "max_collaborators": {
+                "maxCollaborators": {
                     "type": "integer",
                     "default": 50,
                     "description": "Maximum collaborators to return"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["author_id"]
+            "required": ["authorId"]
         })
     }
 
@@ -133,7 +133,7 @@ impl McpTool for AuthorNetworkTool {
                     "id": id,
                     "name": data.name,
                     "shared_papers": data.shared_papers,
-                    "paper_ids": data.paper_ids
+                    "paperIds": data.paper_ids
                 })
             })
             .collect();
@@ -188,7 +188,7 @@ impl McpTool for AuthorNetworkTool {
                 },
                 "total_papers": papers.len(),
                 "total_collaborators": collaborators.len(),
-                "min_shared_papers": params.min_shared_papers,
+                "minSharedPapers": params.min_shared_papers,
                 "collaborators": collaborators
             }))?),
         }

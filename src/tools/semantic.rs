@@ -32,15 +32,15 @@ impl McpTool for SemanticSearchTool {
                     "type": "string",
                     "description": "Paper ID to find similar papers for"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Minimum publication year"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "Maximum publication year"
                 },
-                "fields_of_study": {
+                "fieldsOfStudy": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Filter by fields of study"
@@ -49,7 +49,7 @@ impl McpTool for SemanticSearchTool {
                     "type": "integer",
                     "default": 100
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -125,9 +125,9 @@ impl McpTool for SemanticSearchTool {
                     "seed_paper_id": params.seed_paper_id,
                     "total_found": filtered.len(),
                     "filters": {
-                        "year_start": params.year_start,
-                        "year_end": params.year_end,
-                        "fields_of_study": params.fields_of_study
+                        "yearStart": params.year_start,
+                        "yearEnd": params.year_end,
+                        "fieldsOfStudy": params.fields_of_study
                     },
                     "similar_papers": compact
                 }))?)
@@ -158,31 +158,31 @@ impl McpTool for LiteratureReviewPipelineTool {
                     "type": "string",
                     "description": "Initial search query"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Minimum publication year"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "Maximum publication year"
                 },
-                "min_citations": {
+                "minCitations": {
                     "type": "integer",
                     "description": "Minimum citation count"
                 },
-                "include_recommendations": {
+                "includeRecommendations": {
                     "type": "boolean",
                     "default": true
                 },
-                "include_citations": {
+                "includeCitations": {
                     "type": "boolean",
                     "default": true
                 },
-                "max_papers": {
+                "maxPapers": {
                     "type": "integer",
                     "default": 200
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -414,9 +414,9 @@ impl McpTool for LiteratureReviewPipelineTool {
                     "duplicates_removed": duplicates_removed,
                     "sources": sources,
                     "filters": {
-                        "year_start": params.year_start,
-                        "year_end": params.year_end,
-                        "min_citations": params.min_citations
+                        "yearStart": params.year_start,
+                        "yearEnd": params.year_end,
+                        "minCitations": params.min_citations
                     },
                     "papers": compact
                 }))?)

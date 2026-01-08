@@ -30,7 +30,7 @@ impl McpTool for BatchMetadataTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_ids": {
+                "paperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "maxItems": 500,
@@ -41,13 +41,13 @@ impl McpTool for BatchMetadataTool {
                     "items": {"type": "string"},
                     "description": "Fields to retrieve"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["paper_ids"]
+            "required": ["paperIds"]
         })
     }
 
@@ -105,7 +105,7 @@ impl McpTool for AuthorSearchTool {
                     "default": 10,
                     "maximum": 100
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -155,15 +155,15 @@ impl McpTool for AuthorPapersTool {
         json!({
             "type": "object",
             "properties": {
-                "author_id": {
+                "authorId": {
                     "type": "string",
                     "description": "Semantic Scholar author ID"
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Minimum publication year"
                 },
-                "year_end": {
+                "yearEnd": {
                     "type": "integer",
                     "description": "Maximum publication year"
                 },
@@ -172,13 +172,13 @@ impl McpTool for AuthorPapersTool {
                     "default": 100,
                     "maximum": 1000
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["author_id"]
+            "required": ["authorId"]
         })
     }
 
@@ -229,7 +229,7 @@ impl McpTool for PaperAutocompleteTool {
                     "type": "string",
                     "description": "Partial paper title to autocomplete"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -309,7 +309,7 @@ impl McpTool for PaperTitleMatchTool {
                     "type": "string",
                     "description": "Exact or near-exact paper title"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -381,17 +381,17 @@ impl McpTool for PaperAuthorsTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_id": {
+                "paperId": {
                     "type": "string",
                     "description": "Paper ID (S2, DOI:, ARXIV:, PMID:)"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["paper_id"]
+            "required": ["paperId"]
         })
     }
 
@@ -420,7 +420,7 @@ impl McpTool for PaperAuthorsTool {
                     .map(formatters::compact_author)
                     .collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&json!({
-                    "paper_id": params.paper_id,
+                    "paperId": params.paper_id,
                     "authors": compact
                 }))?)
             }
@@ -446,19 +446,19 @@ impl McpTool for AuthorBatchTool {
         json!({
             "type": "object",
             "properties": {
-                "author_ids": {
+                "authorIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "maxItems": 1000,
                     "description": "Semantic Scholar author IDs"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["author_ids"]
+            "required": ["authorIds"]
         })
     }
 

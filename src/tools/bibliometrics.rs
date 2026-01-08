@@ -32,7 +32,7 @@ impl McpTool for FieldWeightedImpactTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_ids": {
+                "paperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Paper IDs to analyze"
@@ -41,13 +41,13 @@ impl McpTool for FieldWeightedImpactTool {
                     "type": "integer",
                     "default": 100
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["paper_ids"]
+            "required": ["paperIds"]
         })
     }
 
@@ -71,7 +71,7 @@ impl McpTool for FieldWeightedImpactTool {
 
             let Some(year) = year else {
                 results.push(json!({
-                    "paper_id": paper.paper_id,
+                    "paperId": paper.paper_id,
                     "title": paper.title_or_default(),
                     "fwci": null,
                     "error": "Missing year data"
@@ -81,7 +81,7 @@ impl McpTool for FieldWeightedImpactTool {
 
             if paper_fields.is_empty() {
                 results.push(json!({
-                    "paper_id": paper.paper_id,
+                    "paperId": paper.paper_id,
                     "title": paper.title_or_default(),
                     "fwci": null,
                     "error": "Missing field data"
@@ -114,7 +114,7 @@ impl McpTool for FieldWeightedImpactTool {
             };
 
             results.push(json!({
-                "paper_id": paper.paper_id,
+                "paperId": paper.paper_id,
                 "title": paper.title_or_default(),
                 "year": year,
                 "citations": citations,
@@ -214,23 +214,23 @@ impl McpTool for HighlyCitedPapersTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_ids": {
+                "paperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "Paper IDs to evaluate"
                 },
-                "percentile_threshold": {
+                "percentileThreshold": {
                     "type": "number",
                     "default": 1.0,
                     "description": "Top X percentile (1.0 = top 1%)"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["paper_ids"]
+            "required": ["paperIds"]
         })
     }
 
@@ -267,7 +267,7 @@ impl McpTool for HighlyCitedPapersTool {
             let is_highly_cited = threshold > 0 && citations >= threshold;
 
             results.push(json!({
-                "paper_id": paper.paper_id,
+                "paperId": paper.paper_id,
                 "title": paper.title_or_default(),
                 "year": year,
                 "primary_field": primary_field,
@@ -358,17 +358,17 @@ impl McpTool for CitationHalfLifeTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_id": {
+                "paperId": {
                     "type": "string",
                     "description": "Paper ID to analyze"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["paper_id"]
+            "required": ["paperId"]
         })
     }
 
@@ -382,7 +382,7 @@ impl McpTool for CitationHalfLifeTool {
             .map_err(ToolError::from)?;
 
         let paper = papers.into_iter().next().ok_or_else(|| {
-            ToolError::validation("paper_id", "Paper not found")
+            ToolError::validation("paperId", "Paper not found")
         })?;
 
         let pub_year = paper.year.ok_or_else(|| {
@@ -472,7 +472,7 @@ impl McpTool for CitationHalfLifeTool {
                 Ok(output)
             }
             ResponseFormat::Json => Ok(serde_json::to_string(&json!({
-                "paper_id": paper.paper_id,
+                "paperId": paper.paper_id,
                 "title": paper.title_or_default(),
                 "year": pub_year,
                 "total_citations": paper.citations(),
@@ -503,29 +503,29 @@ impl McpTool for CocitationAnalysisTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_id": {
+                "paperId": {
                     "type": "string",
                     "description": "Focal paper ID"
                 },
-                "min_cocitations": {
+                "minCocitations": {
                     "type": "integer",
                     "default": 5
                 },
-                "max_citing_papers": {
+                "maxCitingPapers": {
                     "type": "integer",
                     "default": 100
                 },
-                "max_results": {
+                "maxResults": {
                     "type": "integer",
                     "default": 50
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["paper_id"]
+            "required": ["paperId"]
         })
     }
 
@@ -540,7 +540,7 @@ impl McpTool for CocitationAnalysisTool {
             .map_err(ToolError::from)?;
 
         let focal_paper = papers.into_iter().next().ok_or_else(|| {
-            ToolError::validation("paper_id", "Focal paper not found")
+            ToolError::validation("paperId", "Focal paper not found")
         })?;
 
         // Get citing papers
@@ -662,29 +662,29 @@ impl McpTool for BibliographicCouplingTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_id": {
+                "paperId": {
                     "type": "string",
                     "description": "Focal paper ID"
                 },
-                "min_shared_refs": {
+                "minSharedRefs": {
                     "type": "integer",
                     "default": 3
                 },
-                "max_refs_to_check": {
+                "maxRefsToCheck": {
                     "type": "integer",
                     "default": 50
                 },
-                "max_results": {
+                "maxResults": {
                     "type": "integer",
                     "default": 50
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
                 }
             },
-            "required": ["paper_id"]
+            "required": ["paperId"]
         })
     }
 
@@ -699,7 +699,7 @@ impl McpTool for BibliographicCouplingTool {
             .map_err(ToolError::from)?;
 
         let focal_paper = papers.into_iter().next().ok_or_else(|| {
-            ToolError::validation("paper_id", "Focal paper not found")
+            ToolError::validation("paperId", "Focal paper not found")
         })?;
 
         // Get references of focal paper
@@ -828,23 +828,23 @@ impl McpTool for HotPapersTool {
                     "type": "string",
                     "description": "Search query for candidate papers"
                 },
-                "time_window_months": {
+                "timeWindowMonths": {
                     "type": "integer",
                     "default": 24
                 },
-                "min_recent_citations": {
+                "minRecentCitations": {
                     "type": "integer",
                     "default": 10
                 },
-                "max_papers": {
+                "maxPapers": {
                     "type": "integer",
                     "default": 50
                 },
-                "year_start": {
+                "yearStart": {
                     "type": "integer",
                     "description": "Minimum publication year"
                 },
-                "response_format": {
+                "responseFormat": {
                     "type": "string",
                     "enum": ["markdown", "json"],
                     "default": "markdown"
@@ -959,7 +959,7 @@ impl McpTool for HotPapersTool {
             }
             ResponseFormat::Json => Ok(serde_json::to_string(&json!({
                 "query": params.query,
-                "time_window_months": params.time_window_months,
+                "timeWindowMonths": params.time_window_months,
                 "papers_analyzed": hot_papers_data.len(),
                 "hot_threshold_rank": hot_threshold,
                 "results": hot_papers_data

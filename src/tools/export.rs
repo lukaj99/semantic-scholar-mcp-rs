@@ -24,7 +24,7 @@ impl McpTool for ReferenceExportTool {
         json!({
             "type": "object",
             "properties": {
-                "paper_ids": {
+                "paperIds": {
                     "type": "array",
                     "items": {"type": "string"},
                     "maxItems": 500,
@@ -35,12 +35,12 @@ impl McpTool for ReferenceExportTool {
                     "enum": ["ris", "bibtex", "csv", "endnote"],
                     "default": "ris"
                 },
-                "include_abstract": {
+                "includeAbstract": {
                     "type": "boolean",
                     "default": true
                 }
             },
-            "required": ["paper_ids"]
+            "required": ["paperIds"]
         })
     }
 

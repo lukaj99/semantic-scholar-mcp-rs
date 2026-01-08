@@ -212,7 +212,7 @@ async fn test_highly_cited_custom_percentile() {
     let tool = HighlyCitedPapersTool;
 
     let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "percentileThreshold": 5.0}))
+        .execute(&ctx, json!({"paperIds": ["p1"], "percentile_threshold": 5.0}))
         .await
         .unwrap();
 
@@ -295,7 +295,7 @@ async fn test_citation_half_life_json_format() {
         .unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
-    assert!(parsed.get("paper_id").is_some());
+    assert!(parsed.get("paperId").is_some());
     assert!(parsed.get("age_distribution").is_some());
 }
 

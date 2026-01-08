@@ -397,7 +397,7 @@ fn test_batch_metadata_tool_input_schema() {
     let tool = BatchMetadataTool;
     let schema = tool.input_schema();
     assert!(schema.get("properties").is_some());
-    assert!(schema["properties"]["paper_ids"].is_object());
+    assert!(schema["properties"]["paperIds"].is_object());
 }
 
 #[test]
@@ -709,7 +709,7 @@ fn test_paper_authors_tool_input_schema() {
     let tool = PaperAuthorsTool;
     let schema = tool.input_schema();
     assert!(schema.get("properties").is_some());
-    assert!(schema["properties"]["paper_id"].is_object());
+    assert!(schema["properties"]["paperId"].is_object());
 }
 
 // =============================================================================
@@ -810,5 +810,5 @@ fn test_author_batch_tool_input_schema() {
     let tool = AuthorBatchTool;
     let schema = tool.input_schema();
     assert!(schema.get("properties").is_some());
-    assert!(schema["properties"]["author_ids"].is_object());
+    assert!(schema["properties"]["authorIds"].is_object());
 }
