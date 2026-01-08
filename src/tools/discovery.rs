@@ -253,6 +253,12 @@ impl McpTool for CitationSnowballTool {
                     "type": "integer",
                     "default": 100
                 },
+                "min_citations": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "description": "Minimum citations for included papers"
+                },
                 "deduplicate": {
                     "type": "boolean",
                     "default": true
@@ -301,7 +307,12 @@ impl McpTool for CitationSnowballTool {
                 if let Ok(result) = result {
                     for ctx_paper in result.data {
                         if let Some(paper) = ctx_paper.paper {
-                            if !seen.contains(&paper.paper_id) {
+                            // Filter by min_citations if set
+                            let passes_filter = params.min_citations
+                                .map(|min| paper.citation_count.unwrap_or(0) >= min)
+                                .unwrap_or(true);
+
+                            if passes_filter && !seen.contains(&paper.paper_id) {
                                 if params.deduplicate {
                                     seen.insert(paper.paper_id.clone());
                                 }
@@ -326,7 +337,12 @@ impl McpTool for CitationSnowballTool {
                 if let Ok(result) = result {
                     for ctx_paper in result.data {
                         if let Some(paper) = ctx_paper.paper {
-                            if !seen.contains(&paper.paper_id) {
+                            // Filter by min_citations if set
+                            let passes_filter = params.min_citations
+                                .map(|min| paper.citation_count.unwrap_or(0) >= min)
+                                .unwrap_or(true);
+
+                            if passes_filter && !seen.contains(&paper.paper_id) {
                                 if params.deduplicate {
                                     seen.insert(paper.paper_id.clone());
                                 }

@@ -340,8 +340,9 @@ async fn test_citation_snowball_min_citations_filter() {
         .await
         .unwrap();
 
-    // Should only include high citation paper
-    assert!(result.contains("High Citations") || result.contains("snowball"));
+    // MUST include high citation paper AND exclude low citation paper
+    assert!(result.contains("High Citations"), "Should include paper with 500 citations");
+    assert!(!result.contains("Low Citations"), "Should filter out paper with only 5 citations");
 }
 
 // =============================================================================
