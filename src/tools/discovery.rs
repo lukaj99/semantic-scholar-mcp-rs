@@ -673,12 +673,20 @@ impl McpTool for SnippetSearchTool {
                 );
 
                 for (i, snippet) in result.data.iter().enumerate() {
-                    output.push_str(&format!("### {}. {}\n", i + 1, snippet.paper.title_or_default()));
+                    let title = snippet.paper.as_ref()
+                        .and_then(|p| p.title.as_deref())
+                        .unwrap_or("Unknown Title");
+                    output.push_str(&format!("### {}. {}\n", i + 1, title));
 
-                    if let Some(year) = snippet.paper.year {
-                        output.push_str(&format!("**Year:** {} | ", year));
+                    if let Some(ref paper) = snippet.paper {
+                        if let Some(year) = paper.year {
+                            output.push_str(&format!("**Year:** {}\n", year));
+                        }
+                        if !paper.authors.is_empty() {
+                            output.push_str(&format!("**Authors:** {}\n", paper.authors.join(", ")));
+                        }
                     }
-                    output.push_str(&format!("**Citations:** {}\n\n", snippet.paper.citations()));
+                    output.push('\n');
 
                     if let Some(ref snip) = snippet.snippet {
                         if let Some(ref kind) = snip.snippet_kind {
@@ -709,7 +717,12 @@ impl McpTool for SnippetSearchTool {
                     .iter()
                     .map(|s| {
                         json!({
-                            "paper": formatters::compact_paper(&s.paper),
+                            "paper": s.paper.as_ref().map(|p| json!({
+                                "paperId": p.paper_id,
+                                "title": p.title,
+                                "year": p.year,
+                                "authors": p.authors
+                            })),
                             "score": s.score,
                             "snippet": s.snippet.as_ref().map(|snip| json!({
                                 "text": snip.text,

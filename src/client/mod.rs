@@ -344,8 +344,8 @@ impl SemanticScholarClient {
         let mut params = vec![
             ("query".to_string(), query.to_string()),
             ("limit".to_string(), limit.to_string()),
-            // Snippet API only supports snippet-specific fields
-            ("fields".to_string(), "paper.paperId,paper.title,paper.year,paper.citationCount,paper.authors,snippet.text,snippet.snippetKind,snippet.section".to_string()),
+            // Snippet API only supports snippet-specific fields, no paper fields
+            ("fields".to_string(), "snippet.text,snippet.snippetKind,snippet.section".to_string()),
         ];
 
         // Add filter parameters

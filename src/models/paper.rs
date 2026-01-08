@@ -330,8 +330,9 @@ pub struct SnippetSearchResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Snippet {
-    /// The paper this snippet is from.
-    pub paper: Paper,
+    /// The paper this snippet is from (minimal info from snippet API).
+    #[serde(default)]
+    pub paper: Option<SnippetPaper>,
 
     /// Match score.
     #[serde(default)]
@@ -340,6 +341,27 @@ pub struct Snippet {
     /// The matched text snippet.
     #[serde(default)]
     pub snippet: Option<SnippetText>,
+}
+
+/// Minimal paper info returned by snippet API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnippetPaper {
+    /// Paper ID.
+    #[serde(default)]
+    pub paper_id: Option<String>,
+
+    /// Paper title.
+    #[serde(default)]
+    pub title: Option<String>,
+
+    /// Publication year.
+    #[serde(default)]
+    pub year: Option<i32>,
+
+    /// Authors as simple strings (snippet API format).
+    #[serde(default)]
+    pub authors: Vec<String>,
 }
 
 /// Text snippet details.

@@ -752,8 +752,7 @@ fn sample_snippet(paper_id: &str, title: &str, text: &str, kind: &str) -> serde_
             "paperId": paper_id,
             "title": title,
             "year": 2023,
-            "citationCount": 100,
-            "authors": [{"authorId": "a1", "name": "Test Author"}]
+            "authors": ["Test Author"]
         },
         "score": 0.95,
         "snippet": {

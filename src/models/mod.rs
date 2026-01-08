@@ -13,6 +13,6 @@ pub use enums::{ExportFormat, PearlGrowingStrategy, ResponseFormat, SearchDirect
 pub use inputs::*;
 pub use paper::{
     AutocompleteMatch, AutocompleteResult, BulkSearchResult, CitationResult, ExternalIds,
-    OpenAccessPdf, Paper, PaperAuthorsResult, PaperRef, SearchResult, Snippet, SnippetSearchResult,
-    SnippetText, TitleMatchResult, Tldr,
+    OpenAccessPdf, Paper, PaperAuthorsResult, PaperRef, SearchResult, Snippet, SnippetPaper,
+    SnippetSearchResult, SnippetText, TitleMatchResult, Tldr,
 };
