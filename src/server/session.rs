@@ -48,6 +48,7 @@ impl BufferedEvent {
     }
 
     /// Convert to an Axum SSE Event.
+    #[inline]
     pub fn to_sse_event(&self) -> Event {
         Event::default()
             .id(self.id.to_string())
@@ -88,7 +89,7 @@ impl Session {
 
     /// Push an event to the session (stores in history and broadcasts).
     pub async fn push_event(&self, event_type: impl Into<String>, data: impl Into<String>) -> u64 {
-        let id = self.next_event_id.fetch_add(1, Ordering::SeqCst);
+        let id = self.next_event_id.fetch_add(1, Ordering::Relaxed);
         let event = BufferedEvent::new(id, event_type, data);
 
         // Store in history
@@ -120,6 +121,7 @@ impl Session {
     }
 
     /// Subscribe to live events.
+    #[inline]
     pub fn subscribe(&self) -> broadcast::Receiver<BufferedEvent> {
         self.tx.subscribe()
     }
@@ -136,8 +138,9 @@ impl Session {
     }
 
     /// Get current event ID (for debugging).
+    #[inline]
     pub fn current_event_id(&self) -> u64 {
-        self.next_event_id.load(Ordering::SeqCst)
+        self.next_event_id.load(Ordering::Relaxed)
     }
 }
 

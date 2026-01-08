@@ -1,8 +1,8 @@
 [package]
 name = "semantic-scholar-mcp"
 version = "0.1.0"
-edition = "2021"
-rust-version = "1.83"
+edition = "2024"
+rust-version = "1.92"
 license = "MIT"
 description = "MCP server for Semantic Scholar API - systematic reviews and bibliometrics"
 repository = "https://github.com/luka/semantic-scholar-mcp-rs"
@@ -11,7 +11,7 @@ categories = ["command-line-utilities", "science"]
 
 [dependencies]
 # Async runtime
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.43", features = ["full"] }
 
 # HTTP client with HTTP/2 support
 reqwest = { version = "0.12", default-features = false, features = [
@@ -73,7 +73,7 @@ uuid = { version = "1", features = ["v4"] }
 tokio-test = "0.4"
 wiremock = "0.6"
 insta = { version = "1", features = ["json"] }
-criterion = { version = "0.5", features = ["async_tokio"] }
+criterion = { version = "0.8", features = ["async_tokio"] }
 
 [features]
 default = []
