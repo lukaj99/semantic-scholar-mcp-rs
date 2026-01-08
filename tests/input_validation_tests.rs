@@ -3,7 +3,6 @@
 //! Tests default values, serialization, edge cases, and invalid inputs.
 
 use semantic_scholar_mcp::models::*;
-use std::collections::HashMap;
 
 // =============================================================================
 // ExhaustiveSearchInput Tests
