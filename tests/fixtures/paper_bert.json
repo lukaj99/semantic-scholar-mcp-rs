@@ -1,0 +1,24 @@
+{
+  "paperId": "df2b0e26d0599ce3e70df8a9da02e51594e0e992",
+  "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+  "abstract": "We introduce a new language representation model called BERT...",
+  "year": 2019,
+  "citationCount": 85000,
+  "referenceCount": 52,
+  "fieldsOfStudy": ["Computer Science"],
+  "authors": [
+    {"authorId": "39172707", "name": "Jacob Devlin"},
+    {"authorId": "145193968", "name": "Ming-Wei Chang"},
+    {"authorId": "2685208", "name": "Kenton Lee"},
+    {"authorId": "2112929", "name": "Kristina Toutanova"}
+  ],
+  "venue": "North American Chapter of the Association for Computational Linguistics",
+  "publicationDate": "2018-10-11",
+  "externalIds": {
+    "DOI": "10.18653/v1/N19-1423",
+    "ArXiv": "1810.04805",
+    "CorpusId": 52967399
+  },
+  "influentialCitationCount": 3500,
+  "isOpenAccess": true
+}

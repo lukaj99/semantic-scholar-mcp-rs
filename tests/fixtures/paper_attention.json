@@ -1,0 +1,32 @@
+{
+  "paperId": "649def34f8be52c8b66281af98ae884c09aef38b",
+  "title": "Attention is All You Need",
+  "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks...",
+  "year": 2017,
+  "citationCount": 120000,
+  "referenceCount": 38,
+  "fieldsOfStudy": ["Computer Science"],
+  "authors": [
+    {"authorId": "144783904", "name": "Ashish Vaswani"},
+    {"authorId": "40348417", "name": "Noam Shazeer"},
+    {"authorId": "47962837", "name": "Niki Parmar"},
+    {"authorId": "39172707", "name": "Jakob Uszkoreit"},
+    {"authorId": "145024664", "name": "Llion Jones"},
+    {"authorId": "1846258", "name": "Aidan N. Gomez"},
+    {"authorId": "3443442", "name": "Lukasz Kaiser"},
+    {"authorId": "1682629", "name": "Illia Polosukhin"}
+  ],
+  "venue": "Neural Information Processing Systems",
+  "publicationDate": "2017-06-12",
+  "externalIds": {
+    "DOI": "10.5555/3295222.3295349",
+    "ArXiv": "1706.03762",
+    "CorpusId": 13756489
+  },
+  "tldr": {
+    "text": "A new simple network architecture based solely on attention mechanisms is proposed.",
+    "model": "tldr@v2.0.0"
+  },
+  "influentialCitationCount": 5000,
+  "isOpenAccess": true
+}
