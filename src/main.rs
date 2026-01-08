@@ -76,6 +76,7 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let config = Config::new(cli.api_key);
+    tracing::info!(has_api_key = config.has_api_key(), "API configuration");
     let client = SemanticScholarClient::new(config)?;
     let server = McpServer::new(client);
 
