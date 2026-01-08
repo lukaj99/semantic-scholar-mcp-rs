@@ -7,6 +7,7 @@
 //! - Broadcast channels for live event delivery
 //! - Async tool execution decoupled from HTTP handlers
 
+use std::borrow::Cow;
 use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
@@ -44,7 +45,7 @@ pub struct JsonRpcRequest {
 /// JSON-RPC 2.0 response.
 #[derive(Debug, Clone, Serialize)]
 pub struct JsonRpcResponse {
-    pub jsonrpc: String,
+    pub jsonrpc: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -63,18 +64,23 @@ pub struct JsonRpcError {
 }
 
 impl JsonRpcResponse {
+    /// JSON-RPC version constant.
+    const VERSION: &'static str = "2.0";
+
+    #[must_use]
     pub fn success(id: Option<serde_json::Value>, result: serde_json::Value) -> Self {
         Self {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: Cow::Borrowed(Self::VERSION),
             result: Some(result),
             error: None,
             id,
         }
     }
 
+    #[must_use]
     pub fn error(id: Option<serde_json::Value>, code: i32, message: impl Into<String>) -> Self {
         Self {
-            jsonrpc: "2.0".to_string(),
+            jsonrpc: Cow::Borrowed(Self::VERSION),
             result: None,
             error: Some(JsonRpcError {
                 code,
@@ -206,7 +212,7 @@ async fn handle_mcp_post(
                 Json(JsonRpcResponse::success(req.id, result)).into_response();
             response.headers_mut().insert(
                 "Mcp-Session-Id",
-                session.id.parse().unwrap(),
+                session.id.to_header_value(),
             );
             return response;
         }
@@ -254,7 +260,7 @@ async fn handle_mcp_post(
 
     let mut res = Json(response).into_response();
     res.headers_mut()
-        .insert("Mcp-Session-Id", session.id.parse().unwrap());
+        .insert("Mcp-Session-Id", session.id.to_header_value());
     res
 }
 

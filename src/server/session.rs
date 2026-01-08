@@ -7,12 +7,63 @@
 //! - Background cleanup of stale sessions
 
 use std::collections::{HashMap, VecDeque};
+use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use axum::http::HeaderValue;
 use axum::response::sse::Event;
 use tokio::sync::{broadcast, RwLock};
+
+/// A type-safe session identifier.
+///
+/// Wraps a UUID string and provides safe conversion to HTTP header values.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SessionId(String);
+
+impl SessionId {
+    /// Create a new random session ID.
+    #[must_use]
+    pub fn new() -> Self {
+        Self(uuid::Uuid::new_v4().to_string())
+    }
+
+    /// Get the session ID as a string slice.
+    #[must_use]
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Convert to an HTTP header value.
+    ///
+    /// This is infallible because UUIDs are always valid ASCII.
+    #[must_use]
+    #[inline]
+    pub fn to_header_value(&self) -> HeaderValue {
+        // SAFETY: UUID strings are always valid ASCII
+        HeaderValue::from_str(&self.0).expect("UUID is valid ASCII")
+    }
+}
+
+impl Default for SessionId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for SessionId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl AsRef<str> for SessionId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
 
 /// Maximum number of events to keep in history per session.
 const HISTORY_SIZE: usize = 100;
@@ -60,7 +111,7 @@ impl BufferedEvent {
 /// A single MCP session with message buffer and broadcast channel.
 pub struct Session {
     /// Unique session identifier.
-    pub id: String,
+    pub id: SessionId,
     /// Broadcast sender for live events.
     tx: broadcast::Sender<BufferedEvent>,
     /// Ring buffer of recent events for replay.
@@ -74,11 +125,12 @@ pub struct Session {
 }
 
 impl Session {
-    /// Create a new session.
-    pub fn new(id: String) -> Self {
+    /// Create a new session with a random ID.
+    #[must_use]
+    pub fn new() -> Self {
         let (tx, _) = broadcast::channel(64);
         Self {
-            id,
+            id: SessionId::new(),
             tx,
             history: RwLock::new(VecDeque::with_capacity(HISTORY_SIZE)),
             next_event_id: AtomicU64::new(1),
@@ -144,8 +196,14 @@ impl Session {
     }
 }
 
-impl std::fmt::Debug for Session {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Default for Session {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Debug for Session {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Session")
             .field("id", &self.id)
             .field("current_event_id", &self.current_event_id())
@@ -162,16 +220,17 @@ pub struct SessionManager {
 
 impl SessionManager {
     /// Create a new session manager.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    /// Create a new session and return its ID.
+    /// Create a new session and return it.
     pub async fn create_session(&self) -> Arc<Session> {
-        let id = uuid::Uuid::new_v4().to_string();
-        let session = Arc::new(Session::new(id.clone()));
+        let session = Arc::new(Session::new());
+        let id = session.id.as_str().to_owned();
 
         self.sessions.write().await.insert(id, session.clone());
 
@@ -256,8 +315,8 @@ impl Default for SessionManager {
     }
 }
 
-impl std::fmt::Debug for SessionManager {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for SessionManager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SessionManager").finish()
     }
 }
@@ -271,13 +330,13 @@ mod tests {
         let manager = SessionManager::new();
         let session = manager.create_session().await;
 
-        assert!(!session.id.is_empty());
+        assert!(!session.id.as_str().is_empty());
         assert_eq!(manager.session_count().await, 1);
     }
 
     #[tokio::test]
     async fn test_event_push_and_replay() {
-        let session = Session::new("test".to_string());
+        let session = Session::new();
 
         // Push events
         let id1 = session.push_event("message", r#"{"test": 1}"#).await;
@@ -301,7 +360,7 @@ mod tests {
         let session = manager.create_session().await;
         let id = session.id.clone();
 
-        let found = manager.get_session(&id).await;
+        let found = manager.get_session(id.as_str()).await;
         assert!(found.is_some());
 
         let not_found = manager.get_session("nonexistent").await;
@@ -310,7 +369,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ring_buffer_overflow() {
-        let session = Session::new("test".to_string());
+        let session = Session::new();
 
         // Push more than HISTORY_SIZE events
         for i in 0..150 {

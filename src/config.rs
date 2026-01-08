@@ -176,7 +176,7 @@ impl Config {
 
     /// Check if an API key is configured.
     #[must_use]
-    pub fn has_api_key(&self) -> bool {
+    pub const fn has_api_key(&self) -> bool {
         self.api_key.is_some()
     }
 }

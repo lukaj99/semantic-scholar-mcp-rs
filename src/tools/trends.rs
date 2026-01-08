@@ -287,10 +287,9 @@ impl McpTool for VenueAnalyticsTool {
             }
         }
 
-        // Top papers
-        let mut sorted_papers = all_papers.clone();
-        sorted_papers.sort_by(|a, b| b.citations().cmp(&a.citations()));
-        let top_papers: Vec<_> = sorted_papers
+        // Top papers (sort in place since we don't need original order)
+        all_papers.sort_by(|a, b| b.citations().cmp(&a.citations()));
+        let top_papers: Vec<_> = all_papers
             .iter()
             .take(10)
             .map(|p| {

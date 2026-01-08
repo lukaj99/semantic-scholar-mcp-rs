@@ -285,7 +285,8 @@ fn extract_keywords(papers: &[crate::models::Paper]) -> Vec<String> {
 
     // Improved regex: matches words with letters, numbers, and hyphens
     // Handles technical terms like "GPT-4", "COVID-19", "BERT", "transformer"
-    let word_re = Regex::new(r"\b[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]\b|\b[a-zA-Z]{2,}\b").unwrap();
+    let word_re = Regex::new(r"\b[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]\b|\b[a-zA-Z]{2,}\b")
+        .expect("valid word regex pattern");
 
     for paper in papers {
         let text = format!(

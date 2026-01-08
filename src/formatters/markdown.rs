@@ -1,5 +1,7 @@
 //! Markdown output formatting.
 
+use std::borrow::Cow;
+
 use crate::models::{Author, Paper};
 
 /// Format a list of papers as Markdown.
@@ -81,10 +83,10 @@ pub fn format_paper_markdown(paper: &Paper, index: usize) -> String {
 
     // Abstract (truncated)
     if let Some(abs) = &paper.r#abstract {
-        let truncated = if abs.len() > 300 {
-            format!("{}...", &abs[..300])
+        let truncated: Cow<'_, str> = if abs.len() > 300 {
+            Cow::Owned(format!("{}...", &abs[..300]))
         } else {
-            abs.clone()
+            Cow::Borrowed(abs)
         };
         output.push_str(&format!("**Abstract**: {truncated}\n"));
     }

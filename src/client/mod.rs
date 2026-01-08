@@ -54,7 +54,9 @@ impl SemanticScholarClient {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
             reqwest::header::CONTENT_TYPE,
-            "application/json".parse().unwrap(),
+            "application/json"
+                .parse()
+                .expect("valid content-type header"),
         );
 
         if let Some(ref key) = config.api_key {

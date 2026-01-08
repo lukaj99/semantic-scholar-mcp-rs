@@ -69,17 +69,25 @@ impl McpTool for FieldWeightedImpactTool {
             let year = paper.year;
             let paper_fields = paper.fields_of_study.clone().unwrap_or_default();
 
-            if year.is_none() || paper_fields.is_empty() {
+            let Some(year) = year else {
                 results.push(json!({
                     "paper_id": paper.paper_id,
                     "title": paper.title_or_default(),
                     "fwci": null,
-                    "error": "Missing year or field data"
+                    "error": "Missing year data"
+                }));
+                continue;
+            };
+
+            if paper_fields.is_empty() {
+                results.push(json!({
+                    "paper_id": paper.paper_id,
+                    "title": paper.title_or_default(),
+                    "fwci": null,
+                    "error": "Missing field data"
                 }));
                 continue;
             }
-
-            let year = year.unwrap();
 
             // Get baselines for each field (limit to 3)
             let mut field_baselines = Vec::new();
@@ -244,10 +252,9 @@ impl McpTool for HighlyCitedPapersTool {
             let paper_fields = paper.fields_of_study.clone().unwrap_or_default();
             let primary_field = paper_fields.first().cloned().unwrap_or_else(|| "Unknown".to_string());
 
-            if year.is_none() {
+            let Some(year) = year else {
                 continue;
-            }
-            let year = year.unwrap();
+            };
 
             let key = (primary_field.clone(), year);
             if !thresholds.contains_key(&key) {
@@ -416,7 +423,7 @@ impl McpTool for CitationHalfLifeTool {
                         } else {
                             "10+"
                         };
-                        *age_distribution.get_mut(bucket).unwrap() += 1;
+                        *age_distribution.entry(bucket).or_insert(0) += 1;
                     }
                 }
             }
