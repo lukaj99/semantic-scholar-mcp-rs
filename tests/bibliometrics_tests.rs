@@ -690,3 +690,121 @@ async fn test_cocitation_paper_not_found() {
     let result = tool.execute(&ctx, json!({"paperId": "nonexistent"})).await;
     assert!(result.is_err());
 }
+
+// =============================================================================
+// Tool Trait Method Tests (for coverage)
+// =============================================================================
+
+#[test]
+fn test_fwci_tool_name() {
+    let tool = FieldWeightedImpactTool;
+    assert_eq!(tool.name(), "field_weighted_impact");
+}
+
+#[test]
+fn test_fwci_tool_description() {
+    let tool = FieldWeightedImpactTool;
+    assert!(tool.description().len() > 10);
+}
+
+#[test]
+fn test_fwci_tool_input_schema() {
+    let tool = FieldWeightedImpactTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+}
+
+#[test]
+fn test_highly_cited_tool_name() {
+    let tool = HighlyCitedPapersTool;
+    assert_eq!(tool.name(), "highly_cited_papers");
+}
+
+#[test]
+fn test_highly_cited_tool_description() {
+    let tool = HighlyCitedPapersTool;
+    assert!(tool.description().len() > 10);
+}
+
+#[test]
+fn test_highly_cited_tool_input_schema() {
+    let tool = HighlyCitedPapersTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+}
+
+#[test]
+fn test_citation_half_life_tool_name() {
+    let tool = CitationHalfLifeTool;
+    assert_eq!(tool.name(), "citation_half_life");
+}
+
+#[test]
+fn test_citation_half_life_tool_description() {
+    let tool = CitationHalfLifeTool;
+    assert!(tool.description().len() > 10);
+}
+
+#[test]
+fn test_citation_half_life_tool_input_schema() {
+    let tool = CitationHalfLifeTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+}
+
+#[test]
+fn test_cocitation_tool_name() {
+    let tool = CocitationAnalysisTool;
+    assert_eq!(tool.name(), "cocitation_analysis");
+}
+
+#[test]
+fn test_cocitation_tool_description() {
+    let tool = CocitationAnalysisTool;
+    assert!(tool.description().len() > 10);
+}
+
+#[test]
+fn test_cocitation_tool_input_schema() {
+    let tool = CocitationAnalysisTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+}
+
+#[test]
+fn test_bibliographic_coupling_tool_name() {
+    let tool = BibliographicCouplingTool;
+    assert_eq!(tool.name(), "bibliographic_coupling");
+}
+
+#[test]
+fn test_bibliographic_coupling_tool_description() {
+    let tool = BibliographicCouplingTool;
+    assert!(tool.description().len() > 10);
+}
+
+#[test]
+fn test_bibliographic_coupling_tool_input_schema() {
+    let tool = BibliographicCouplingTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+}
+
+#[test]
+fn test_hot_papers_tool_name() {
+    let tool = HotPapersTool;
+    assert_eq!(tool.name(), "hot_papers");
+}
+
+#[test]
+fn test_hot_papers_tool_description() {
+    let tool = HotPapersTool;
+    assert!(tool.description().len() > 10);
+}
+
+#[test]
+fn test_hot_papers_tool_input_schema() {
+    let tool = HotPapersTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+}
