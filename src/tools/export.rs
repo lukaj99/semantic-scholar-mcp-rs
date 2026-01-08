@@ -88,7 +88,9 @@ fn format_ris(papers: &[Paper], include_abstract: bool) -> String {
 
         if include_abstract {
             if let Some(abs) = &paper.r#abstract {
-                output.push_str(&format!("AB  - {abs}\n"));
+                // RIS format requires continuation lines for multi-line abstracts
+                let abs_clean = abs.replace('\r', "").replace('\n', " ");
+                output.push_str(&format!("AB  - {abs_clean}\n"));
             }
         }
 
@@ -117,20 +119,20 @@ fn format_bibtex(papers: &[Paper], include_abstract: bool) -> String {
         );
 
         output.push_str(&format!("@article{{{key},\n"));
-        output.push_str(&format!("  title = {{{}}},\n", paper.title_or_default()));
-        output.push_str(&format!("  author = {{{}}},\n", paper.author_names()));
+        output.push_str(&format!("  title = {{{}}},\n", escape_bibtex(paper.title_or_default())));
+        output.push_str(&format!("  author = {{{}}},\n", escape_bibtex(&paper.author_names())));
 
         if year > 0 {
             output.push_str(&format!("  year = {{{year}}},\n"));
         }
 
         if let Some(venue) = &paper.venue {
-            output.push_str(&format!("  journal = {{{venue}}},\n"));
+            output.push_str(&format!("  journal = {{{}}},\n", escape_bibtex(venue)));
         }
 
         if include_abstract {
             if let Some(abs) = &paper.r#abstract {
-                let abs_escaped = abs.replace('{', "\\{").replace('}', "\\}");
+                let abs_escaped = escape_bibtex(abs);
                 output.push_str(&format!("  abstract = {{{abs_escaped}}},\n"));
             }
         }
@@ -205,7 +207,9 @@ fn format_endnote(papers: &[Paper], include_abstract: bool) -> String {
 
         if include_abstract {
             if let Some(abs) = &paper.r#abstract {
-                output.push_str(&format!("%X {abs}\n"));
+                // EndNote format: replace newlines with spaces
+                let abs_clean = abs.replace('\r', "").replace('\n', " ");
+                output.push_str(&format!("%X {abs_clean}\n"));
             }
         }
 
@@ -219,10 +223,33 @@ fn format_endnote(papers: &[Paper], include_abstract: bool) -> String {
     output
 }
 
+/// Escape a string for BibTeX output.
+fn escape_bibtex(s: &str) -> String {
+    s.replace('\\', "\\textbackslash{}")
+        .replace('{', "\\{")
+        .replace('}', "\\}")
+        .replace('&', "\\&")
+        .replace('%', "\\%")
+        .replace('$', "\\$")
+        .replace('#', "\\#")
+        .replace('_', "\\_")
+        .replace('^', "\\textasciicircum{}")
+        .replace('~', "\\textasciitilde{}")
+}
+
 /// Escape a string for CSV output.
 fn csv_escape(s: &str) -> String {
-    if s.contains(',') || s.contains('"') || s.contains('\n') {
-        format!("\"{}\"", s.replace('"', "\"\""))
+    if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
+        // Prefix with single quote to prevent formula injection in spreadsheets
+        let escaped = s.replace('"', "\"\"");
+        if escaped.starts_with('=') || escaped.starts_with('+') || escaped.starts_with('-') || escaped.starts_with('@') {
+            format!("\"'{}\"", escaped)
+        } else {
+            format!("\"{}\"", escaped)
+        }
+    } else if s.starts_with('=') || s.starts_with('+') || s.starts_with('-') || s.starts_with('@') {
+        // Prevent CSV injection
+        format!("'{}", s)
     } else {
         s.to_string()
     }

@@ -166,7 +166,7 @@ async fn get_field_baseline(ctx: &ToolContext, _field: &str, year: i32, sample_s
             let citations: Vec<i32> = search_result
                 .data
                 .iter()
-                .filter_map(|p| Some(p.citations()))
+                .map(|p| p.citations())
                 .collect();
             if citations.is_empty() {
                 1.0
@@ -174,11 +174,13 @@ async fn get_field_baseline(ctx: &ToolContext, _field: &str, year: i32, sample_s
                 // Calculate median
                 let mut sorted = citations.clone();
                 sorted.sort();
-                let mid = sorted.len() / 2;
-                if sorted.len() % 2 == 0 {
-                    (sorted[mid - 1] + sorted[mid]) as f64 / 2.0
+                let len = sorted.len();
+                if len == 1 {
+                    sorted[0] as f64
+                } else if len % 2 == 0 {
+                    (sorted[len / 2 - 1] + sorted[len / 2]) as f64 / 2.0
                 } else {
-                    sorted[mid] as f64
+                    sorted[len / 2] as f64
                 }
             }
         }
