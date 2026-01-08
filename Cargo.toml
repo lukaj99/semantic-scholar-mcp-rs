@@ -48,10 +48,16 @@ moka = { version = "0.12", features = ["future"] }
 # MCP Protocol
 # rmcp = { version = "0.1", features = ["server", "transport-io"] }  # Temporarily disabled
 
+# HTTP Server
+axum = { version = "0.8", features = ["json"] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
 # Async utilities
 futures = "0.3"
 async-stream = "0.3"
 pin-project-lite = "0.2"
+tokio-stream = { version = "0.1", features = ["sync"] }
 
 # Async trait
 async-trait = "0.1"
@@ -61,6 +67,7 @@ md-5 = "0.10"
 url = "2"
 chrono = { version = "0.4", features = ["serde"] }
 regex = "1"
+uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

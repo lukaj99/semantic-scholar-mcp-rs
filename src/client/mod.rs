@@ -17,7 +17,7 @@ use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
 use crate::config::{api, Config};
 use crate::error::{ClientError, ClientResult};
-use crate::models::{Author, AuthorSearchResult, Paper, SearchResult};
+use crate::models::{Author, AuthorSearchResult, BulkSearchResult, Paper, SearchResult, SnippetSearchResult};
 
 /// Semantic Scholar API client.
 #[derive(Clone)]
@@ -284,6 +284,164 @@ impl SemanticScholarClient {
             let result: RecommendationResult = self.post(&url, &params, &body).await?;
             Ok(result.recommended_papers)
         }
+    }
+
+    /// Bulk search for papers with boolean query syntax.
+    ///
+    /// Supports: +term (AND), -term (NOT), |term (OR), "phrase", term*, term~N
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn search_papers_bulk(
+        &self,
+        query: &str,
+        token: Option<&str>,
+        fields: &[&str],
+        sort: Option<&str>,
+        filters: &[(String, String)],
+    ) -> ClientResult<BulkSearchResult> {
+        let url = format!("{}/paper/search/bulk", self.graph_api_url);
+
+        let mut params = vec![
+            ("query".to_string(), query.to_string()),
+            ("fields".to_string(), fields.join(",")),
+        ];
+
+        if let Some(t) = token {
+            params.push(("token".to_string(), t.to_string()));
+        }
+
+        if let Some(s) = sort {
+            params.push(("sort".to_string(), s.to_string()));
+        }
+
+        // Add filter parameters
+        for (k, v) in filters {
+            params.push((k.clone(), v.clone()));
+        }
+
+        self.get(&url, &params).await
+    }
+
+    /// Search for text snippets matching a query.
+    ///
+    /// Returns highlighted text excerpts from paper titles, abstracts, and body text.
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn search_snippets(
+        &self,
+        query: &str,
+        limit: i32,
+        filters: &[(String, String)],
+    ) -> ClientResult<SnippetSearchResult> {
+        let url = format!("{}/snippet/search", self.graph_api_url);
+
+        let mut params = vec![
+            ("query".to_string(), query.to_string()),
+            ("limit".to_string(), limit.to_string()),
+            ("fields".to_string(), "paperId,title,year,citationCount,authors,snippet.text,snippet.snippetKind,snippet.section".to_string()),
+        ];
+
+        // Add filter parameters
+        for (k, v) in filters {
+            params.push((k.clone(), v.clone()));
+        }
+
+        self.get(&url, &params).await
+    }
+
+    /// Autocomplete paper titles.
+    ///
+    /// Returns suggestions for partial title queries.
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn autocomplete_papers(
+        &self,
+        query: &str,
+    ) -> ClientResult<Vec<crate::models::AutocompleteMatch>> {
+        let url = format!("{}/paper/autocomplete", self.graph_api_url);
+        let params = vec![("query".to_string(), query.to_string())];
+
+        #[derive(serde::Deserialize)]
+        struct AutocompleteResponse {
+            #[serde(default)]
+            matches: Vec<crate::models::AutocompleteMatch>,
+        }
+
+        let result: AutocompleteResponse = self.get(&url, &params).await?;
+        Ok(result.matches)
+    }
+
+    /// Search for a paper by exact title match.
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn search_paper_by_title(
+        &self,
+        title: &str,
+        fields: &[&str],
+    ) -> ClientResult<Option<Paper>> {
+        let url = format!("{}/paper/search/match", self.graph_api_url);
+        let params = vec![
+            ("query".to_string(), title.to_string()),
+            ("fields".to_string(), fields.join(",")),
+        ];
+
+        // API returns either paper directly or error
+        let result: Option<Paper> = self.get(&url, &params).await.ok();
+        Ok(result)
+    }
+
+    /// Get detailed author information for a paper.
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn get_paper_authors(
+        &self,
+        paper_id: &str,
+    ) -> ClientResult<Vec<crate::models::Author>> {
+        let url = format!("{}/paper/{}/authors", self.graph_api_url, paper_id);
+        let params = vec![
+            ("fields".to_string(), "authorId,name,affiliations,homepage,paperCount,citationCount,hIndex,externalIds".to_string()),
+        ];
+
+        #[derive(serde::Deserialize)]
+        struct AuthorsResponse {
+            data: Vec<crate::models::Author>,
+        }
+
+        let result: AuthorsResponse = self.get(&url, &params).await?;
+        Ok(result.data)
+    }
+
+    /// Get multiple authors by ID (batch API).
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn get_authors_batch(
+        &self,
+        author_ids: &[String],
+    ) -> ClientResult<Vec<crate::models::Author>> {
+        let url = format!("{}/author/batch", self.graph_api_url);
+        let params = vec![
+            ("fields".to_string(), "authorId,name,affiliations,homepage,paperCount,citationCount,hIndex,externalIds".to_string()),
+        ];
+
+        let body = serde_json::json!({
+            "ids": author_ids
+        });
+
+        // API returns [Author, null, Author] for invalid IDs - filter nulls
+        let results: Vec<Option<crate::models::Author>> = self.post(&url, &params, &body).await?;
+        Ok(results.into_iter().flatten().collect())
     }
 
     /// Make a GET request.

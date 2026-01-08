@@ -1,4 +1,4 @@
-//! Discovery tools: exhaustive_search, recommendations, citation_snowball.
+//! Discovery tools: exhaustive_search, recommendations, citation_snowball, bulk_boolean_search, snippet_search.
 
 use serde_json::json;
 
@@ -7,7 +7,8 @@ use crate::config::fields;
 use crate::error::{ToolError, ToolResult};
 use crate::formatters;
 use crate::models::{
-    CitationSnowballInput, ExhaustiveSearchInput, RecommendationsInput, ResponseFormat,
+    BulkBooleanSearchInput, CitationSnowballInput, ExhaustiveSearchInput, RecommendationsInput,
+    ResponseFormat, SnippetSearchInput,
 };
 
 /// Exhaustive paper search tool.
@@ -382,6 +383,347 @@ impl McpTool for CitationSnowballTool {
                     "depth": params.depth,
                     "count": papers.len(),
                     "papers": compact
+                }))?)
+            }
+        }
+    }
+}
+
+/// Bulk boolean search tool (up to 10M papers).
+pub struct BulkBooleanSearchTool;
+
+#[async_trait::async_trait]
+impl McpTool for BulkBooleanSearchTool {
+    fn name(&self) -> &'static str {
+        "bulk_boolean_search"
+    }
+
+    fn description(&self) -> &'static str {
+        "Search for papers using boolean query syntax. Supports +term (AND), -term (NOT), \
+         |term (OR), \"phrase\", term*, term~N (fuzzy). Can retrieve up to 10M papers."
+    }
+
+    fn input_schema(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Boolean query: +term -term |term \"phrase\" term* term~2"
+                },
+                "fields_of_study": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Filter by fields of study"
+                },
+                "year_start": {
+                    "type": "integer",
+                    "description": "Minimum publication year"
+                },
+                "year_end": {
+                    "type": "integer",
+                    "description": "Maximum publication year"
+                },
+                "min_citations": {
+                    "type": "integer",
+                    "description": "Minimum citation count"
+                },
+                "venue": {
+                    "type": "string",
+                    "description": "Filter by venue name"
+                },
+                "publication_types": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "JournalArticle, Conference, Review, etc."
+                },
+                "open_access_only": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "sort": {
+                    "type": "string",
+                    "description": "Sort: citationCount:desc, publicationDate:asc, paperId:asc"
+                },
+                "max_results": {
+                    "type": "integer",
+                    "default": 1000,
+                    "description": "Maximum papers to return"
+                },
+                "response_format": {
+                    "type": "string",
+                    "enum": ["markdown", "json"],
+                    "default": "markdown"
+                }
+            },
+            "required": ["query"]
+        })
+    }
+
+    async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String> {
+        let params: BulkBooleanSearchInput = serde_json::from_value(input)?;
+
+        // Build filter parameters
+        let mut filters: Vec<(String, String)> = Vec::new();
+
+        if let Some(ref fields) = params.fields_of_study {
+            filters.push(("fieldsOfStudy".to_string(), fields.join(",")));
+        }
+
+        if let Some(min_year) = params.year_start {
+            if let Some(max_year) = params.year_end {
+                filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+            } else {
+                filters.push(("year".to_string(), format!("{}-", min_year)));
+            }
+        } else if let Some(max_year) = params.year_end {
+            filters.push(("year".to_string(), format!("-{}", max_year)));
+        }
+
+        if let Some(min_cites) = params.min_citations {
+            filters.push(("minCitationCount".to_string(), min_cites.to_string()));
+        }
+
+        if let Some(ref venue) = params.venue {
+            filters.push(("venue".to_string(), venue.clone()));
+        }
+
+        if let Some(ref pub_types) = params.publication_types {
+            filters.push(("publicationTypes".to_string(), pub_types.join(",")));
+        }
+
+        if params.open_access_only {
+            filters.push(("openAccessPdf".to_string(), String::new()));
+        }
+
+        // Paginate through results
+        let mut all_papers = Vec::new();
+        let mut token: Option<String> = None;
+
+        loop {
+            if all_papers.len() >= params.max_results as usize {
+                break;
+            }
+
+            let result = ctx
+                .client
+                .search_papers_bulk(
+                    &params.query,
+                    token.as_deref(),
+                    fields::DEFAULT,
+                    params.sort.as_deref(),
+                    &filters,
+                )
+                .await
+                .map_err(ToolError::from)?;
+
+            let has_more = result.has_more();
+            token = result.token;
+            all_papers.extend(result.data);
+
+            if !has_more {
+                break;
+            }
+        }
+
+        // Truncate to max_results
+        all_papers.truncate(params.max_results as usize);
+
+        match params.response_format {
+            ResponseFormat::Markdown => {
+                let mut output = format!(
+                    "# Bulk Boolean Search Results\n\n\
+                     **Query:** `{}`\n\
+                     **Found:** {} papers\n\n\
+                     ⚠️ *Boolean syntax: +required -excluded |optional \"phrase\" wildcard* fuzzy~2*\n\n---\n\n",
+                    params.query,
+                    all_papers.len()
+                );
+                output.push_str(&formatters::format_papers_markdown(&all_papers));
+                Ok(output)
+            }
+            ResponseFormat::Json => {
+                let compact = all_papers
+                    .iter()
+                    .map(formatters::compact_paper)
+                    .collect::<Vec<_>>();
+                Ok(serde_json::to_string_pretty(&json!({
+                    "query": params.query,
+                    "total": all_papers.len(),
+                    "papers": compact
+                }))?)
+            }
+        }
+    }
+}
+
+/// Snippet search tool (full-text search with highlights).
+pub struct SnippetSearchTool;
+
+#[async_trait::async_trait]
+impl McpTool for SnippetSearchTool {
+    fn name(&self) -> &'static str {
+        "snippet_search"
+    }
+
+    fn description(&self) -> &'static str {
+        "Search for text snippets within paper titles, abstracts, and body text. \
+         Returns highlighted excerpts matching your query - useful for finding specific claims or methods."
+    }
+
+    fn input_schema(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Plain text search query"
+                },
+                "paper_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Filter to specific papers (up to ~100)"
+                },
+                "authors": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Filter by author names (fuzzy match, max 10)"
+                },
+                "fields_of_study": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "year_start": {
+                    "type": "integer"
+                },
+                "year_end": {
+                    "type": "integer"
+                },
+                "min_citations": {
+                    "type": "integer"
+                },
+                "venue": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 100,
+                    "maximum": 1000
+                },
+                "response_format": {
+                    "type": "string",
+                    "enum": ["markdown", "json"],
+                    "default": "markdown"
+                }
+            },
+            "required": ["query"]
+        })
+    }
+
+    async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String> {
+        let params: SnippetSearchInput = serde_json::from_value(input)?;
+
+        // Build filter parameters
+        let mut filters: Vec<(String, String)> = Vec::new();
+
+        if let Some(ref paper_ids) = params.paper_ids {
+            filters.push(("paperIds".to_string(), paper_ids.join(",")));
+        }
+
+        if let Some(ref authors) = params.authors {
+            filters.push(("authors".to_string(), authors.join(",")));
+        }
+
+        if let Some(ref fields) = params.fields_of_study {
+            filters.push(("fieldsOfStudy".to_string(), fields.join(",")));
+        }
+
+        if let Some(min_year) = params.year_start {
+            if let Some(max_year) = params.year_end {
+                filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+            } else {
+                filters.push(("year".to_string(), format!("{}-", min_year)));
+            }
+        } else if let Some(max_year) = params.year_end {
+            filters.push(("year".to_string(), format!("-{}", max_year)));
+        }
+
+        if let Some(min_cites) = params.min_citations {
+            filters.push(("minCitationCount".to_string(), min_cites.to_string()));
+        }
+
+        if let Some(ref venue) = params.venue {
+            filters.push(("venue".to_string(), venue.clone()));
+        }
+
+        let result = ctx
+            .client
+            .search_snippets(&params.query, params.limit, &filters)
+            .await
+            .map_err(ToolError::from)?;
+
+        match params.response_format {
+            ResponseFormat::Markdown => {
+                let mut output = format!(
+                    "# Snippet Search Results\n\n\
+                     **Query:** \"{}\"\n\
+                     **Snippets found:** {}\n\n---\n\n",
+                    params.query,
+                    result.data.len()
+                );
+
+                for (i, snippet) in result.data.iter().enumerate() {
+                    output.push_str(&format!("### {}. {}\n", i + 1, snippet.paper.title_or_default()));
+
+                    if let Some(year) = snippet.paper.year {
+                        output.push_str(&format!("**Year:** {} | ", year));
+                    }
+                    output.push_str(&format!("**Citations:** {}\n\n", snippet.paper.citations()));
+
+                    if let Some(ref snip) = snippet.snippet {
+                        if let Some(ref kind) = snip.snippet_kind {
+                            output.push_str(&format!("**Source:** {}", kind));
+                            if let Some(ref section) = snip.section {
+                                output.push_str(&format!(" ({})", section));
+                            }
+                            output.push_str("\n");
+                        }
+
+                        if let Some(ref text) = snip.text {
+                            output.push_str(&format!("> {}\n", text));
+                        }
+                    }
+
+                    output.push_str("\n---\n\n");
+                }
+
+                if result.data.is_empty() {
+                    output.push_str("*No snippets found matching the query.*");
+                }
+
+                Ok(output)
+            }
+            ResponseFormat::Json => {
+                let snippets: Vec<_> = result
+                    .data
+                    .iter()
+                    .map(|s| {
+                        json!({
+                            "paper": formatters::compact_paper(&s.paper),
+                            "score": s.score,
+                            "snippet": s.snippet.as_ref().map(|snip| json!({
+                                "text": snip.text,
+                                "kind": snip.snippet_kind,
+                                "section": snip.section
+                            }))
+                        })
+                    })
+                    .collect();
+
+                Ok(serde_json::to_string_pretty(&json!({
+                    "query": params.query,
+                    "total": result.data.len(),
+                    "snippets": snippets
                 }))?)
             }
         }

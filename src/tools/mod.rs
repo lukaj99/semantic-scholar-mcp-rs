@@ -68,15 +68,21 @@ pub trait McpTool: Send + Sync {
 #[must_use]
 pub fn register_all_tools() -> Vec<Box<dyn McpTool>> {
     vec![
-        // Discovery tools (3)
+        // Discovery tools (5)
         Box::new(discovery::ExhaustiveSearchTool),
         Box::new(discovery::RecommendationsTool),
         Box::new(discovery::CitationSnowballTool),
+        Box::new(discovery::BulkBooleanSearchTool),
+        Box::new(discovery::SnippetSearchTool),
 
-        // Enrichment tools (3)
+        // Enrichment tools (7)
         Box::new(enrichment::BatchMetadataTool),
         Box::new(enrichment::AuthorSearchTool),
         Box::new(enrichment::AuthorPapersTool),
+        Box::new(enrichment::PaperAutocompleteTool),
+        Box::new(enrichment::PaperTitleMatchTool),
+        Box::new(enrichment::PaperAuthorsTool),
+        Box::new(enrichment::AuthorBatchTool),
 
         // Export tools (1)
         Box::new(export::ReferenceExportTool),

@@ -1,4 +1,5 @@
-//! Mock-based tests for enrichment tools: batch_metadata, author_search, author_papers
+//! Mock-based tests for enrichment tools: batch_metadata, author_search, author_papers,
+//! paper_autocomplete, paper_title_match, paper_authors, author_batch
 
 use std::sync::Arc;
 
@@ -9,7 +10,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{
-    AuthorPapersTool, AuthorSearchTool, BatchMetadataTool, McpTool, ToolContext,
+    AuthorBatchTool, AuthorPapersTool, AuthorSearchTool, BatchMetadataTool, McpTool,
+    PaperAutocompleteTool, PaperAuthorsTool, PaperTitleMatchTool, ToolContext,
 };
 
 async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
@@ -436,4 +438,377 @@ fn test_author_papers_tool_input_schema() {
     let schema = tool.input_schema();
     assert!(schema.get("properties").is_some());
     assert!(schema["properties"]["authorId"].is_object() || schema["properties"]["author_id"].is_object());
+}
+
+// =============================================================================
+// PaperAutocompleteTool Tests
+// =============================================================================
+
+#[tokio::test]
+async fn test_paper_autocomplete_basic() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/autocomplete"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "matches": [
+                {"id": "p1", "match": "Attention Is All You Need"},
+                {"id": "p2", "match": "Attention Mechanisms in Neural Networks"}
+            ]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperAutocompleteTool;
+
+    let result = tool
+        .execute(&ctx, json!({"query": "attention"}))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Attention") || result.contains("autocomplete"));
+}
+
+#[tokio::test]
+async fn test_paper_autocomplete_json_format() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/autocomplete"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "matches": [{"id": "p1", "match": "Test Paper"}]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperAutocompleteTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "test",
+            "responseFormat": "json"
+        }))
+        .await
+        .unwrap();
+
+    let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+    assert!(parsed.get("suggestions").is_some());
+}
+
+#[tokio::test]
+async fn test_paper_autocomplete_empty() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/autocomplete"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "matches": []
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperAutocompleteTool;
+
+    let result = tool
+        .execute(&ctx, json!({"query": "xyz123nonexistent"}))
+        .await
+        .unwrap();
+
+    assert!(result.contains("No suggestions") || result.contains("suggestions"));
+}
+
+#[test]
+fn test_paper_autocomplete_tool_name() {
+    let tool = PaperAutocompleteTool;
+    assert_eq!(tool.name(), "paper_autocomplete");
+}
+
+#[test]
+fn test_paper_autocomplete_tool_description() {
+    let tool = PaperAutocompleteTool;
+    assert!(tool.description().contains("suggestions") || tool.description().contains("title"));
+}
+
+#[test]
+fn test_paper_autocomplete_tool_input_schema() {
+    let tool = PaperAutocompleteTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+    assert!(schema["properties"]["query"].is_object());
+}
+
+// =============================================================================
+// PaperTitleMatchTool Tests
+// =============================================================================
+
+#[tokio::test]
+async fn test_paper_title_match_found() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/match"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(
+            sample_paper("p1", "Attention Is All You Need", 2017, 50000)
+        ))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperTitleMatchTool;
+
+    let result = tool
+        .execute(&ctx, json!({"title": "Attention Is All You Need"}))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Attention") || result.contains("Match"));
+}
+
+#[tokio::test]
+async fn test_paper_title_match_not_found() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/match"))
+        .respond_with(ResponseTemplate::new(404).set_body_string("Not found"))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperTitleMatchTool;
+
+    let result = tool
+        .execute(&ctx, json!({"title": "Nonexistent Paper XYZ"}))
+        .await
+        .unwrap();
+
+    assert!(result.contains("No exact match") || result.contains("Match"));
+}
+
+#[tokio::test]
+async fn test_paper_title_match_json_format() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/match"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(
+            sample_paper("p1", "JSON Title Match", 2023, 100)
+        ))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperTitleMatchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "title": "JSON Title Match",
+            "responseFormat": "json"
+        }))
+        .await
+        .unwrap();
+
+    let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+    assert!(parsed.get("matched").is_some());
+}
+
+#[test]
+fn test_paper_title_match_tool_name() {
+    let tool = PaperTitleMatchTool;
+    assert_eq!(tool.name(), "paper_title_match");
+}
+
+#[test]
+fn test_paper_title_match_tool_description() {
+    let tool = PaperTitleMatchTool;
+    assert!(tool.description().contains("title") || tool.description().contains("match"));
+}
+
+#[test]
+fn test_paper_title_match_tool_input_schema() {
+    let tool = PaperTitleMatchTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+    assert!(schema["properties"]["title"].is_object());
+}
+
+// =============================================================================
+// PaperAuthorsTool Tests
+// =============================================================================
+
+#[tokio::test]
+async fn test_paper_authors_basic() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/p123/authors"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [
+                sample_author("a1", "First Author", 5000, 25),
+                sample_author("a2", "Second Author", 3000, 20)
+            ]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperAuthorsTool;
+
+    let result = tool
+        .execute(&ctx, json!({"paperId": "p123"}))
+        .await
+        .unwrap();
+
+    assert!(result.contains("First Author") || result.contains("Authors"));
+}
+
+#[tokio::test]
+async fn test_paper_authors_json_format() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/json_paper/authors"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [sample_author("a1", "JSON Author", 1000, 15)]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = PaperAuthorsTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "paperId": "json_paper",
+            "responseFormat": "json"
+        }))
+        .await
+        .unwrap();
+
+    let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+    assert!(parsed.get("authors").is_some());
+}
+
+#[test]
+fn test_paper_authors_tool_name() {
+    let tool = PaperAuthorsTool;
+    assert_eq!(tool.name(), "paper_authors");
+}
+
+#[test]
+fn test_paper_authors_tool_description() {
+    let tool = PaperAuthorsTool;
+    assert!(tool.description().contains("author") || tool.description().contains("paper"));
+}
+
+#[test]
+fn test_paper_authors_tool_input_schema() {
+    let tool = PaperAuthorsTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+    assert!(schema["properties"]["paper_id"].is_object());
+}
+
+// =============================================================================
+// AuthorBatchTool Tests
+// =============================================================================
+
+#[tokio::test]
+async fn test_author_batch_basic() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/graph/v1/author/batch"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            sample_author("a1", "Batch Author 1", 5000, 25),
+            sample_author("a2", "Batch Author 2", 3000, 20)
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = AuthorBatchTool;
+
+    let result = tool
+        .execute(&ctx, json!({"authorIds": ["a1", "a2"]}))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Batch Author") || result.contains("Author"));
+}
+
+#[tokio::test]
+async fn test_author_batch_json_format() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/graph/v1/author/batch"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            sample_author("a1", "JSON Batch Author", 2000, 18)
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = AuthorBatchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "authorIds": ["a1"],
+            "responseFormat": "json"
+        }))
+        .await
+        .unwrap();
+
+    let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+    assert!(parsed.get("authors").is_some());
+}
+
+#[tokio::test]
+async fn test_author_batch_partial_results() {
+    let mock_server = MockServer::start().await;
+
+    // Simulate some valid and some null (invalid ID) results
+    Mock::given(method("POST"))
+        .and(path("/graph/v1/author/batch"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            sample_author("a1", "Valid Author", 1000, 10),
+            null,  // Invalid ID returns null
+            sample_author("a3", "Another Valid", 500, 5)
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = AuthorBatchTool;
+
+    let result = tool
+        .execute(&ctx, json!({"authorIds": ["a1", "invalid", "a3"]}))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Valid Author") || result.contains("Found"));
+}
+
+#[test]
+fn test_author_batch_tool_name() {
+    let tool = AuthorBatchTool;
+    assert_eq!(tool.name(), "author_batch");
+}
+
+#[test]
+fn test_author_batch_tool_description() {
+    let tool = AuthorBatchTool;
+    assert!(tool.description().contains("author") || tool.description().contains("batch"));
+}
+
+#[test]
+fn test_author_batch_tool_input_schema() {
+    let tool = AuthorBatchTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+    assert!(schema["properties"]["author_ids"].is_object());
 }

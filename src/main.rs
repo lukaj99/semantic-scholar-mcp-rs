@@ -24,6 +24,10 @@ struct Cli {
     #[arg(long, default_value = "8000", env = "PORT")]
     port: u16,
 
+    /// Base URL for SSE endpoint announcements (e.g., https://scholar.jovanovic.org.uk)
+    #[arg(long, env = "BASE_URL")]
+    base_url: Option<String>,
+
     /// Log level (trace, debug, info, warn, error)
     #[arg(long, default_value = "info", env = "RUST_LOG")]
     log_level: String,
@@ -81,8 +85,8 @@ async fn main() -> anyhow::Result<()> {
             server.run_stdio().await?;
         }
         Transport::Http => {
-            tracing::info!(port = cli.port, "Running in HTTP mode");
-            server.run_http(cli.port).await?;
+            tracing::info!(port = cli.port, base_url = ?cli.base_url, "Running in HTTP mode");
+            server.run_http(cli.port, cli.base_url).await?;
         }
     }
 

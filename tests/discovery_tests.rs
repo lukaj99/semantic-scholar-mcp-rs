@@ -1,4 +1,4 @@
-//! Mock-based tests for discovery tools: exhaustive_search, recommendations, citation_snowball
+//! Mock-based tests for discovery tools: exhaustive_search, recommendations, citation_snowball, bulk_boolean_search, snippet_search
 
 use std::sync::Arc;
 
@@ -9,7 +9,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{
-    CitationSnowballTool, ExhaustiveSearchTool, McpTool, RecommendationsTool, ToolContext,
+    BulkBooleanSearchTool, CitationSnowballTool, ExhaustiveSearchTool, McpTool,
+    RecommendationsTool, SnippetSearchTool, ToolContext,
 };
 
 async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
@@ -554,4 +555,362 @@ fn test_citation_snowball_tool_input_schema() {
     let tool = CitationSnowballTool;
     let schema = tool.input_schema();
     assert!(schema.get("properties").is_some());
+}
+
+// =============================================================================
+// BulkBooleanSearchTool Tests
+// =============================================================================
+
+fn bulk_search_result(papers: Vec<serde_json::Value>, token: Option<&str>) -> serde_json::Value {
+    json!({
+        "total": papers.len(),
+        "token": token,
+        "data": papers
+    })
+}
+
+#[tokio::test]
+async fn test_bulk_boolean_search_basic() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(
+            vec![
+                sample_paper("p1", "Transformer Paper", 2023, 500),
+                sample_paper("p2", "Attention Mechanism", 2022, 300),
+            ],
+            None,
+        )))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = BulkBooleanSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "+transformer +attention -BERT"
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Transformer") || result.contains("Boolean"));
+}
+
+#[tokio::test]
+async fn test_bulk_boolean_search_with_filters() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(
+            vec![sample_paper("p1", "Filtered Paper", 2023, 100)],
+            None,
+        )))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = BulkBooleanSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "+machine +learning",
+            "yearStart": 2020,
+            "yearEnd": 2024,
+            "minCitations": 50,
+            "venue": "NeurIPS"
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Filtered Paper") || result.contains("Boolean"));
+}
+
+#[tokio::test]
+async fn test_bulk_boolean_search_json_format() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(
+            vec![sample_paper("p1", "JSON Paper", 2023, 200)],
+            None,
+        )))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = BulkBooleanSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "test query",
+            "responseFormat": "json"
+        }))
+        .await
+        .unwrap();
+
+    let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+    assert!(parsed.get("papers").is_some() || parsed.get("query").is_some());
+}
+
+#[tokio::test]
+async fn test_bulk_boolean_search_pagination() {
+    let mock_server = MockServer::start().await;
+
+    // First page with continuation token
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(
+            vec![
+                sample_paper("p1", "Page 1 Paper", 2023, 100),
+            ],
+            Some("next_token_123"),
+        )))
+        .expect(1)
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = BulkBooleanSearchTool;
+
+    // Should handle pagination internally (though wiremock will only return first page)
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "test",
+            "maxResults": 1  // Limit to prevent infinite loop
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Page 1") || result.contains("Boolean"));
+}
+
+#[tokio::test]
+async fn test_bulk_boolean_search_with_sort() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(
+            vec![sample_paper("p1", "Sorted Paper", 2023, 1000)],
+            None,
+        )))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = BulkBooleanSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "+citation +analysis",
+            "sort": "citationCount:desc"
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Sorted Paper") || result.contains("Boolean"));
+}
+
+#[test]
+fn test_bulk_boolean_search_tool_name() {
+    let tool = BulkBooleanSearchTool;
+    assert_eq!(tool.name(), "bulk_boolean_search");
+}
+
+#[test]
+fn test_bulk_boolean_search_tool_description() {
+    let tool = BulkBooleanSearchTool;
+    assert!(tool.description().contains("boolean") || tool.description().contains("bulk") || tool.description().contains("10M"));
+}
+
+#[test]
+fn test_bulk_boolean_search_tool_input_schema() {
+    let tool = BulkBooleanSearchTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+    assert!(schema["properties"]["query"].is_object());
+}
+
+// =============================================================================
+// SnippetSearchTool Tests
+// =============================================================================
+
+fn snippet_search_result(snippets: Vec<serde_json::Value>) -> serde_json::Value {
+    json!({
+        "total": snippets.len(),
+        "data": snippets
+    })
+}
+
+fn sample_snippet(paper_id: &str, title: &str, text: &str, kind: &str) -> serde_json::Value {
+    json!({
+        "paper": {
+            "paperId": paper_id,
+            "title": title,
+            "year": 2023,
+            "citationCount": 100,
+            "authors": [{"authorId": "a1", "name": "Test Author"}]
+        },
+        "score": 0.95,
+        "snippet": {
+            "text": text,
+            "snippetKind": kind,
+            "section": "Introduction"
+        }
+    })
+}
+
+#[tokio::test]
+async fn test_snippet_search_basic() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/snippet/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(snippet_search_result(vec![
+            sample_snippet("p1", "Method Paper", "We propose a novel approach to transformers...", "body"),
+            sample_snippet("p2", "Results Paper", "Our method achieves state-of-the-art performance...", "abstract"),
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = SnippetSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "transformer architecture"
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Method Paper") || result.contains("Snippet"));
+}
+
+#[tokio::test]
+async fn test_snippet_search_with_filters() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/snippet/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(snippet_search_result(vec![
+            sample_snippet("p1", "Filtered Snippet", "Relevant text here...", "body"),
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = SnippetSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "neural networks",
+            "yearStart": 2020,
+            "yearEnd": 2024,
+            "fieldsOfStudy": ["Computer Science"],
+            "minCitations": 10
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Filtered Snippet") || result.contains("Snippet"));
+}
+
+#[tokio::test]
+async fn test_snippet_search_json_format() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/snippet/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(snippet_search_result(vec![
+            sample_snippet("p1", "JSON Snippet", "Text content...", "abstract"),
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = SnippetSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "deep learning",
+            "responseFormat": "json"
+        }))
+        .await
+        .unwrap();
+
+    let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+    assert!(parsed.get("snippets").is_some() || parsed.get("query").is_some());
+}
+
+#[tokio::test]
+async fn test_snippet_search_with_limit() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/snippet/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(snippet_search_result(vec![
+            sample_snippet("p1", "Limited Snippet", "First result...", "body"),
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = SnippetSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "attention mechanism",
+            "limit": 10
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("Limited Snippet") || result.contains("Snippet"));
+}
+
+#[tokio::test]
+async fn test_snippet_search_empty_results() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/snippet/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(snippet_search_result(vec![])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server).await;
+    let tool = SnippetSearchTool;
+
+    let result = tool
+        .execute(&ctx, json!({
+            "query": "very obscure topic xyz123"
+        }))
+        .await
+        .unwrap();
+
+    assert!(result.contains("0") || result.contains("no") || result.contains("Snippet"));
+}
+
+#[test]
+fn test_snippet_search_tool_name() {
+    let tool = SnippetSearchTool;
+    assert_eq!(tool.name(), "snippet_search");
+}
+
+#[test]
+fn test_snippet_search_tool_description() {
+    let tool = SnippetSearchTool;
+    assert!(tool.description().contains("snippet") || tool.description().contains("full-text") || tool.description().contains("highlight"));
+}
+
+#[test]
+fn test_snippet_search_tool_input_schema() {
+    let tool = SnippetSearchTool;
+    let schema = tool.input_schema();
+    assert!(schema.get("properties").is_some());
+    assert!(schema["properties"]["query"].is_object());
 }

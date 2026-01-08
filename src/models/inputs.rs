@@ -717,6 +717,154 @@ pub struct PrismaIncludedData {
     pub reports_included: i32,
 }
 
+/// Input for bulk boolean search (up to 10M papers).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkBooleanSearchInput {
+    /// Boolean query: +term (AND), -term (NOT), |term (OR), "phrase", term*, term~N.
+    pub query: String,
+
+    /// Filter by fields of study.
+    #[serde(default)]
+    pub fields_of_study: Option<Vec<String>>,
+
+    /// Minimum publication year.
+    #[serde(default)]
+    pub year_start: Option<i32>,
+
+    /// Maximum publication year.
+    #[serde(default)]
+    pub year_end: Option<i32>,
+
+    /// Minimum citation count.
+    #[serde(default)]
+    pub min_citations: Option<i32>,
+
+    /// Filter by venue name.
+    #[serde(default)]
+    pub venue: Option<String>,
+
+    /// Publication types: JournalArticle, Conference, Review, etc.
+    #[serde(default)]
+    pub publication_types: Option<Vec<String>>,
+
+    /// Only return papers with open access PDFs.
+    #[serde(default)]
+    pub open_access_only: bool,
+
+    /// Sort order: "citationCount:desc", "publicationDate:asc", "paperId:asc".
+    #[serde(default)]
+    pub sort: Option<String>,
+
+    /// Maximum papers to return.
+    #[serde(default = "default_bulk_max")]
+    pub max_results: i32,
+
+    /// Output format.
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+fn default_bulk_max() -> i32 {
+    1000
+}
+
+/// Input for snippet search (full-text search with highlights).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnippetSearchInput {
+    /// Plain text search query.
+    pub query: String,
+
+    /// Filter to specific papers (up to ~100).
+    #[serde(default)]
+    pub paper_ids: Option<Vec<String>>,
+
+    /// Filter by author names (fuzzy match, AND logic, max 10).
+    #[serde(default)]
+    pub authors: Option<Vec<String>>,
+
+    /// Filter by fields of study.
+    #[serde(default)]
+    pub fields_of_study: Option<Vec<String>>,
+
+    /// Minimum publication year.
+    #[serde(default)]
+    pub year_start: Option<i32>,
+
+    /// Maximum publication year.
+    #[serde(default)]
+    pub year_end: Option<i32>,
+
+    /// Minimum citation count.
+    #[serde(default)]
+    pub min_citations: Option<i32>,
+
+    /// Filter by venue name.
+    #[serde(default)]
+    pub venue: Option<String>,
+
+    /// Maximum snippets to return.
+    #[serde(default = "default_snippet_limit")]
+    pub limit: i32,
+
+    /// Output format.
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+fn default_snippet_limit() -> i32 {
+    100
+}
+
+/// Input for paper autocomplete (title suggestions).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaperAutocompleteInput {
+    /// Partial title text to autocomplete.
+    pub query: String,
+
+    /// Output format.
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+/// Input for paper title match (exact title search).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaperTitleMatchInput {
+    /// Exact or near-exact paper title.
+    pub title: String,
+
+    /// Output format.
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+/// Input for paper authors (detailed author info for a paper).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaperAuthorsInput {
+    /// Paper ID (Semantic Scholar ID, DOI:, ARXIV:, etc.).
+    pub paper_id: String,
+
+    /// Output format.
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+/// Input for batch author metadata retrieval.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthorBatchInput {
+    /// Author IDs (up to 1000).
+    pub author_ids: Vec<String>,
+
+    /// Output format.
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

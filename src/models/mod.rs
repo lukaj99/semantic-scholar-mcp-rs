@@ -11,4 +11,8 @@ mod paper;
 pub use author::{Author, AuthorRef, AuthorSearchResult};
 pub use enums::{ExportFormat, PearlGrowingStrategy, ResponseFormat, SearchDirection, TrendGranularity};
 pub use inputs::*;
-pub use paper::{CitationResult, ExternalIds, OpenAccessPdf, Paper, PaperRef, SearchResult, Tldr};
+pub use paper::{
+    AutocompleteMatch, AutocompleteResult, BulkSearchResult, CitationResult, ExternalIds,
+    OpenAccessPdf, Paper, PaperAuthorsResult, PaperRef, SearchResult, Snippet, SnippetSearchResult,
+    SnippetText, TitleMatchResult, Tldr,
+};

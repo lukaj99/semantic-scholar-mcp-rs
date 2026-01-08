@@ -290,6 +290,129 @@ pub struct CitationResult {
     pub data: Vec<CitationContext>,
 }
 
+/// Bulk search result (uses continuation token instead of offset).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct BulkSearchResult {
+    /// Estimated total number of matching papers.
+    #[serde(default)]
+    pub total: i64,
+
+    /// Continuation token for next page (None = no more results).
+    #[serde(default)]
+    pub token: Option<String>,
+
+    /// List of papers in this page.
+    #[serde(default)]
+    pub data: Vec<Paper>,
+}
+
+impl BulkSearchResult {
+    /// Check if there are more results available.
+    #[must_use]
+    pub const fn has_more(&self) -> bool {
+        self.token.is_some()
+    }
+}
+
+/// Snippet search result containing text excerpts from papers.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SnippetSearchResult {
+    /// Total matches.
+    #[serde(default)]
+    pub total: i64,
+
+    /// List of snippets.
+    #[serde(default)]
+    pub data: Vec<Snippet>,
+}
+
+/// A text snippet from a paper matching a search query.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Snippet {
+    /// The paper this snippet is from.
+    pub paper: Paper,
+
+    /// Match score.
+    #[serde(default)]
+    pub score: Option<f64>,
+
+    /// The matched text snippet.
+    #[serde(default)]
+    pub snippet: Option<SnippetText>,
+}
+
+/// Text snippet details.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnippetText {
+    /// The actual text content.
+    #[serde(default)]
+    pub text: Option<String>,
+
+    /// Kind of snippet: "title", "abstract", "body".
+    #[serde(default)]
+    pub snippet_kind: Option<String>,
+
+    /// Section heading where snippet appears.
+    #[serde(default)]
+    pub section: Option<String>,
+
+    /// Annotation data with match positions.
+    #[serde(default)]
+    pub annotations: Option<SnippetAnnotations>,
+}
+
+/// Snippet annotations with match positions.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnippetAnnotations {
+    /// Start position of the matched term.
+    #[serde(default)]
+    pub start: Option<i32>,
+
+    /// End position of the matched term.
+    #[serde(default)]
+    pub end: Option<i32>,
+}
+
+/// Paper autocomplete result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutocompleteResult {
+    /// List of matching papers (minimal info).
+    #[serde(default)]
+    pub matches: Vec<AutocompleteMatch>,
+}
+
+/// A single autocomplete match.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AutocompleteMatch {
+    /// Paper ID.
+    #[serde(default)]
+    pub id: String,
+
+    /// Matched paper title.
+    #[serde(default)]
+    pub match_: Option<String>,
+}
+
+/// Paper title match result (single best match).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TitleMatchResult {
+    /// The matched paper (or null if no match).
+    #[serde(flatten)]
+    pub paper: Option<Paper>,
+}
+
+/// Paper authors result (detailed author info).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaperAuthorsResult {
+    /// List of authors with full details.
+    pub data: Vec<super::Author>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
