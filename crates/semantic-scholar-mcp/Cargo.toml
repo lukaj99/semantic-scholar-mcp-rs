@@ -5,6 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+readme = "../../README.md"
 description = "MCP server for Semantic Scholar API - systematic reviews and bibliometrics"
 keywords = ["mcp", "semantic-scholar", "academic", "research", "citations"]
 categories = ["command-line-utilities", "science"]

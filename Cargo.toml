@@ -74,13 +74,36 @@ criterion = { version = "0.8", features = ["async_tokio"] }
 unsafe_code = "forbid"
 
 [workspace.lints.clippy]
-all = "warn"
-pedantic = "warn"
-nursery = "warn"
-cargo = "warn"
+# Lint groups with lower priority so individual allows take precedence
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
 # Explicit allows (justified)
-missing_errors_doc = "allow"        # MCP tools have uniform error handling
-module_name_repetitions = "allow"   # SemanticScholarClient is intentionally clear
+missing_errors_doc = "allow"          # MCP tools have uniform error handling
+module_name_repetitions = "allow"     # SemanticScholarClient is intentionally clear
+multiple_crate_versions = "allow"     # Transitive deps, not controllable
+missing_const_for_fn = "allow"        # const fn adds little value for async code
+items_after_statements = "allow"      # Local structs in async fns are idiomatic
+too_many_lines = "allow"              # Complex tools need full context
+cast_precision_loss = "allow"         # i32->f64 casts are fine for citation counts
+cast_possible_truncation = "allow"    # usize->i32 won't truncate paper counts
+cast_sign_loss = "allow"              # Array indices are always positive
+doc_markdown = "allow"                # Code in docs doesn't need backticks everywhere
+format_push_string = "allow"          # format! + push_str is readable, performance is not critical
+collapsible_if = "allow"              # Explicit if nesting can be clearer
+cast_lossless = "allow"               # i32 to f64 infallible cast is verbose for no benefit
+unused_self = "allow"                 # Method signatures kept for future extensibility
+missing_fields_in_debug = "allow"     # Custom Debug omits internal fields intentionally
+missing_panics_doc = "allow"          # Panics are assert-style, not runtime
+doc_link_with_quotes = "allow"        # Doc quotes are for readability
+significant_drop_tightening = "allow" # Lock scope is clear in context
+match_same_arms = "allow"             # Explicit arms improve readability
+manual_let_else = "allow"             # Match arms are clear in error handling
+or_fun_call = "allow"                 # Macro calls are compile-time
+map_unwrap_or = "allow"               # map().unwrap_or() is readable
+uninlined_format_args = "allow"       # Named args don't improve all format strings
+redundant_closure_for_method_calls = "allow"  # Closures can be clearer for chained calls
 
 [profile.release]
 lto = true

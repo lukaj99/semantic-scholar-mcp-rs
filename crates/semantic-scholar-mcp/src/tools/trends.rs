@@ -115,7 +115,7 @@ impl McpTool for ResearchTrendsTool {
 
             // Get top papers by citations
             let mut sorted_papers = year_papers.clone();
-            sorted_papers.sort_by(|a, b| b.citations().cmp(&a.citations()));
+            sorted_papers.sort_by_key(|p| std::cmp::Reverse(p.citations()));
             let top_papers: Vec<_> = sorted_papers
                 .iter()
                 .take(3)
@@ -288,7 +288,7 @@ impl McpTool for VenueAnalyticsTool {
         }
 
         // Top papers (sort in place since we don't need original order)
-        all_papers.sort_by(|a, b| b.citations().cmp(&a.citations()));
+        all_papers.sort_by_key(|p| std::cmp::Reverse(p.citations()));
         let top_papers: Vec<_> = all_papers
             .iter()
             .take(10)

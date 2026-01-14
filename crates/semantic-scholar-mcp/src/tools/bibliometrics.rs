@@ -180,12 +180,12 @@ async fn get_field_baseline(ctx: &ToolContext, _field: &str, year: i32, sample_s
                 1.0
             } else {
                 // Calculate median
-                let mut sorted = citations.clone();
-                sorted.sort();
+                let mut sorted = citations;
+                sorted.sort_unstable();
                 let len = sorted.len();
                 if len == 1 {
                     sorted[0] as f64
-                } else if len % 2 == 0 {
+                } else if len.is_multiple_of(2) {
                     (sorted[len / 2 - 1] + sorted[len / 2]) as f64 / 2.0
                 } else {
                     sorted[len / 2] as f64
@@ -377,7 +377,7 @@ impl McpTool for CitationHalfLifeTool {
 
         let papers = ctx
             .client
-            .get_papers_batch(&[params.paper_id.clone()], fields::DEFAULT)
+            .get_papers_batch(std::slice::from_ref(&params.paper_id), fields::DEFAULT)
             .await
             .map_err(ToolError::from)?;
 
@@ -433,7 +433,7 @@ impl McpTool for CitationHalfLifeTool {
         let half_life = if ages.is_empty() {
             None
         } else {
-            ages.sort();
+            ages.sort_unstable();
             let mid = ages.len() / 2;
             Some(if ages.len() % 2 == 0 {
                 (ages[mid - 1] + ages[mid]) as f64 / 2.0
@@ -535,7 +535,7 @@ impl McpTool for CocitationAnalysisTool {
         // Get focal paper
         let papers = ctx
             .client
-            .get_papers_batch(&[params.paper_id.clone()], fields::DEFAULT)
+            .get_papers_batch(std::slice::from_ref(&params.paper_id), fields::DEFAULT)
             .await
             .map_err(ToolError::from)?;
 
@@ -694,7 +694,7 @@ impl McpTool for BibliographicCouplingTool {
         // Get focal paper
         let papers = ctx
             .client
-            .get_papers_batch(&[params.paper_id.clone()], fields::DEFAULT)
+            .get_papers_batch(std::slice::from_ref(&params.paper_id), fields::DEFAULT)
             .await
             .map_err(ToolError::from)?;
 

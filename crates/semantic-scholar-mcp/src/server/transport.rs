@@ -425,10 +425,7 @@ async fn build_sse_stream_with_endpoint(
     let receiver = session.subscribe();
     let live_stream = BroadcastStream::new(receiver).filter_map(
         |result: Result<super::session::BufferedEvent, _>| async move {
-            match result {
-                Ok(event) => Some(Ok(event.to_sse_event())),
-                Err(_) => None,
-            }
+            result.ok().map(|event| Ok(event.to_sse_event()))
         },
     );
 

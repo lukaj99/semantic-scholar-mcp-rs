@@ -204,7 +204,7 @@ impl McpTool for PearlGrowingTool {
 
             // Add new papers (up to limit, sorted by citations)
             let mut sorted_new: Vec<_> = iteration_papers.into_values().collect();
-            sorted_new.sort_by(|a, b| b.citations().cmp(&a.citations()));
+            sorted_new.sort_by_key(|p| std::cmp::Reverse(p.citations()));
             sorted_new.truncate(params.max_papers_per_iteration as usize);
 
             for paper in sorted_new {
@@ -214,7 +214,7 @@ impl McpTool for PearlGrowingTool {
 
         // Final results
         let mut final_papers: Vec<_> = all_papers.into_values().collect();
-        final_papers.sort_by(|a, b| b.citations().cmp(&a.citations()));
+        final_papers.sort_by_key(|p| std::cmp::Reverse(p.citations()));
 
         match params.response_format {
             ResponseFormat::Markdown => {

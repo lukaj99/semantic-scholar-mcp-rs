@@ -116,11 +116,11 @@ impl McpTool for PrismaSearchTool {
             let mut query_duplicate = 0;
 
             for paper in query_papers {
-                if !all_papers.contains_key(&paper.paper_id) {
+                if all_papers.contains_key(&paper.paper_id) {
+                    query_duplicate += 1;
+                } else {
                     all_papers.insert(paper.paper_id.clone(), paper);
                     query_new += 1;
-                } else {
-                    query_duplicate += 1;
                 }
             }
 
@@ -161,8 +161,8 @@ impl McpTool for PrismaSearchTool {
                 }
 
                 output.push_str("\n---\n\n## Papers\n\n");
-                let display_papers: Vec<_> = paper_list.iter().take(100).collect();
-                output.push_str(&formatters::format_papers_markdown(&display_papers.into_iter().cloned().collect::<Vec<_>>()));
+                let display_papers: Vec<_> = paper_list.iter().take(100).cloned().collect();
+                output.push_str(&formatters::format_papers_markdown(&display_papers));
 
                 if paper_list.len() > 100 {
                     output.push_str(&format!("\n*... and {} more papers*", paper_list.len() - 100));
@@ -440,11 +440,12 @@ impl McpTool for PrismaFlowDiagramTool {
 }
 
 fn generate_ascii_diagram(data: &serde_json::Value) -> String {
-    let mut lines = Vec::new();
-    lines.push("=".repeat(70));
-    lines.push("                    PRISMA 2020 FLOW DIAGRAM".to_string());
-    lines.push("=".repeat(70));
-    lines.push(String::new());
+    let mut lines = vec![
+        "=".repeat(70),
+        "                    PRISMA 2020 FLOW DIAGRAM".to_string(),
+        "=".repeat(70),
+        String::new(),
+    ];
 
     // Identification
     if let Some(ident) = data.get("identification") {

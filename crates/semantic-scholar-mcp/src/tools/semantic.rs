@@ -65,7 +65,7 @@ impl McpTool for SemanticSearchTool {
         // Get recommendations using the seed paper
         let papers = ctx
             .client
-            .get_recommendations(&[params.seed_paper_id.clone()], None, params.limit, fields::DEFAULT)
+            .get_recommendations(std::slice::from_ref(&params.seed_paper_id), None, params.limit, fields::DEFAULT)
             .await
             .map_err(ToolError::from)?;
 
@@ -358,7 +358,7 @@ impl McpTool for LiteratureReviewPipelineTool {
             .collect();
 
         // Sort by citations descending
-        paper_list.sort_by(|a, b| b.citations().cmp(&a.citations()));
+        paper_list.sort_by_key(|p| std::cmp::Reverse(p.citations()));
 
         // Calculate stats
         let total_before_dedup = total_found["search"].as_i64().unwrap_or(0)

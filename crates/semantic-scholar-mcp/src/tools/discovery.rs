@@ -87,6 +87,7 @@ impl McpTool for ExhaustiveSearchTool {
             params.max_results
         };
 
+        #[allow(clippy::cast_possible_wrap)]
         loop {
             if all_papers.len() as i32 >= max_results {
                 break;
@@ -694,7 +695,7 @@ impl McpTool for SnippetSearchTool {
                             if let Some(ref section) = snip.section {
                                 output.push_str(&format!(" ({})", section));
                             }
-                            output.push_str("\n");
+                            output.push('\n');
                         }
 
                         if let Some(ref text) = snip.text {
