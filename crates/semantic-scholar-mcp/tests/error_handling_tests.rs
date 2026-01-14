@@ -51,9 +51,7 @@ async fn test_api_rate_limit_429() {
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "test"}))
-        .await;
+    let result = tool.execute(&ctx, json!({"query": "test"})).await;
 
     assert!(result.is_err(), "Should return error on 429");
     let err = result.unwrap_err();
@@ -70,19 +68,14 @@ async fn test_api_server_error_500() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(
-            ResponseTemplate::new(500)
-                .set_body_string("Internal Server Error"),
-        )
+        .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"]}))
-        .await;
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"]})).await;
 
     assert!(result.is_err(), "Should return error on 500");
 }
@@ -93,19 +86,14 @@ async fn test_api_bad_request_400() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(
-            ResponseTemplate::new(400)
-                .set_body_string("Invalid query parameter"),
-        )
+        .respond_with(ResponseTemplate::new(400).set_body_string("Invalid query parameter"))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": ""}))
-        .await;
+    let result = tool.execute(&ctx, json!({"query": ""})).await;
 
     assert!(result.is_err(), "Should return error on 400");
 }
@@ -120,19 +108,14 @@ async fn test_malformed_json_response() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_string("{ invalid json here"),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_string("{ invalid json here"))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "test"}))
-        .await;
+    let result = tool.execute(&ctx, json!({"query": "test"})).await;
 
     // Should error gracefully, not panic
     assert!(result.is_err(), "Should return error on malformed JSON");
@@ -155,9 +138,7 @@ async fn test_html_error_page_response() {
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "test"}))
-        .await;
+    let result = tool.execute(&ctx, json!({"query": "test"})).await;
 
     assert!(result.is_err(), "Should handle HTML response gracefully");
 }
@@ -171,7 +152,7 @@ async fn test_batch_with_null_entries() {
         .and(path("/graph/v1/paper/batch"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!([
             sample_paper("valid1", "Valid Paper"),
-            null,  // Invalid ID returns null
+            null, // Invalid ID returns null
             sample_paper("valid2", "Another Valid"),
         ])))
         .mount(&mock_server)
@@ -180,9 +161,7 @@ async fn test_batch_with_null_entries() {
     let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["valid1", "invalid", "valid2"]}))
-        .await;
+    let result = tool.execute(&ctx, json!({"paperIds": ["valid1", "invalid", "valid2"]})).await;
 
     // Should handle nulls gracefully - either filter them or error clearly
     // The key is: no panic
@@ -204,9 +183,9 @@ async fn test_citation_graph_cycle() {
     // Seed paper batch
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("paperA", "Paper A")
-        ])))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(json!([sample_paper("paperA", "Paper A")])),
+        )
         .mount(&mock_server)
         .await;
 
@@ -235,11 +214,14 @@ async fn test_citation_graph_cycle() {
 
     // depth=2 should handle the cycle without infinite loop
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["paperA"],
-            "direction": "citations",
-            "depth": 2
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["paperA"],
+                "direction": "citations",
+                "depth": 2
+            }),
+        )
         .await;
 
     // Should complete without hanging/panicking
@@ -286,10 +268,13 @@ async fn test_exhaustive_search_pagination() {
     let tool = ExhaustiveSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "maxResults": 200  // Request more than one page
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "maxResults": 200  // Request more than one page
+            }),
+        )
         .await
         .unwrap();
 

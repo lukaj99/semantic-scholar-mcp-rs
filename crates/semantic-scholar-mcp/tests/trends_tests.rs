@@ -64,11 +64,14 @@ async fn test_research_trends_basic() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "machine learning",
-            "yearStart": 2020,
-            "yearEnd": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "machine learning",
+                "yearStart": 2020,
+                "yearEnd": 2023
+            }),
+        )
         .await
         .unwrap();
 
@@ -81,9 +84,12 @@ async fn test_research_trends_json_format() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper("p1", "JSON Trend", 2022, 100),
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![sample_paper(
+            "p1",
+            "JSON Trend",
+            2022,
+            100,
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -91,17 +97,24 @@ async fn test_research_trends_json_format() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "yearStart": 2020,
-            "yearEnd": 2023,
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "yearStart": 2020,
+                "yearEnd": 2023,
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
-    assert!(parsed.get("query").is_some() || parsed.get("trends").is_some() || parsed.get("years").is_some());
+    assert!(
+        parsed.get("query").is_some()
+            || parsed.get("trends").is_some()
+            || parsed.get("years").is_some()
+    );
 }
 
 #[tokio::test]
@@ -110,9 +123,10 @@ async fn test_research_trends_quarterly_granularity() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper("p1", "Q1 Paper", 2023, 100),
-        ])))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(search_result(vec![sample_paper("p1", "Q1 Paper", 2023, 100)])),
+        )
         .mount(&mock_server)
         .await;
 
@@ -120,12 +134,15 @@ async fn test_research_trends_quarterly_granularity() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "AI",
-            "yearStart": 2023,
-            "yearEnd": 2023,
-            "granularity": "quarter"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "AI",
+                "yearStart": 2023,
+                "yearEnd": 2023,
+                "granularity": "quarter"
+            }),
+        )
         .await
         .unwrap();
 
@@ -146,11 +163,14 @@ async fn test_research_trends_no_results() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "nonexistent topic xyz",
-            "yearStart": 2020,
-            "yearEnd": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "nonexistent topic xyz",
+                "yearStart": 2020,
+                "yearEnd": 2023
+            }),
+        )
         .await
         .unwrap();
 
@@ -175,11 +195,14 @@ async fn test_research_trends_wide_range() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "biology",
-            "yearStart": 2010,
-            "yearEnd": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "biology",
+                "yearStart": 2010,
+                "yearEnd": 2023
+            }),
+        )
         .await
         .unwrap();
 
@@ -203,12 +226,15 @@ async fn test_research_trends_max_papers_per_period() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "yearStart": 2022,
-            "yearEnd": 2022,
-            "maxPapersPerPeriod": 10
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "yearStart": 2022,
+                "yearEnd": 2022,
+                "maxPapersPerPeriod": 10
+            }),
+        )
         .await
         .unwrap();
 
@@ -249,10 +275,7 @@ async fn test_venue_analytics_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
-    let result = tool
-        .execute(&ctx, json!({"venueQuery": "NeurIPS"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"venueQuery": "NeurIPS"})).await.unwrap();
 
     assert!(result.contains("NeurIPS") || result.contains("Venue") || result.contains("venue"));
 }
@@ -263,16 +286,14 @@ async fn test_venue_analytics_json_format() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            json!({
-                "paperId": "j1",
-                "title": "JSON Venue Paper",
-                "year": 2023,
-                "citationCount": 50,
-                "venue": "Test Venue",
-                "authors": []
-            }),
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![json!({
+            "paperId": "j1",
+            "title": "JSON Venue Paper",
+            "year": 2023,
+            "citationCount": 50,
+            "venue": "Test Venue",
+            "authors": []
+        })])))
         .mount(&mock_server)
         .await;
 
@@ -280,15 +301,22 @@ async fn test_venue_analytics_json_format() {
     let tool = VenueAnalyticsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "venueQuery": "Test Venue",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "venueQuery": "Test Venue",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
-    assert!(parsed.get("venue").is_some() || parsed.get("statistics").is_some() || parsed.get("total_papers").is_some());
+    assert!(
+        parsed.get("venue").is_some()
+            || parsed.get("statistics").is_some()
+            || parsed.get("total_papers").is_some()
+    );
 }
 
 #[tokio::test]
@@ -297,16 +325,14 @@ async fn test_venue_analytics_with_year_range() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            json!({
-                "paperId": "y1",
-                "title": "Recent Venue Paper",
-                "year": 2023,
-                "citationCount": 100,
-                "venue": "ICML",
-                "authors": []
-            }),
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![json!({
+            "paperId": "y1",
+            "title": "Recent Venue Paper",
+            "year": 2023,
+            "citationCount": 100,
+            "venue": "ICML",
+            "authors": []
+        })])))
         .mount(&mock_server)
         .await;
 
@@ -314,11 +340,14 @@ async fn test_venue_analytics_with_year_range() {
     let tool = VenueAnalyticsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "venueQuery": "ICML",
-            "yearStart": 2020,
-            "yearEnd": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "venueQuery": "ICML",
+                "yearStart": 2020,
+                "yearEnd": 2023
+            }),
+        )
         .await
         .unwrap();
 
@@ -356,10 +385,13 @@ async fn test_venue_analytics_max_papers() {
     let tool = VenueAnalyticsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "venueQuery": "CVPR",
-            "maxPapers": 100
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "venueQuery": "CVPR",
+                "maxPapers": 100
+            }),
+        )
         .await
         .unwrap();
 
@@ -379,10 +411,8 @@ async fn test_venue_analytics_empty_results() {
     let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
-    let result = tool
-        .execute(&ctx, json!({"venueQuery": "Nonexistent Conference XYZ"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"venueQuery": "Nonexistent Conference XYZ"})).await.unwrap();
 
     assert!(result.contains('0') || result.contains("Venue") || !result.is_empty());
 }
@@ -405,16 +435,23 @@ async fn test_venue_analytics_statistics() {
     let tool = VenueAnalyticsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "venueQuery": "Nature",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "venueQuery": "Nature",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     // Should have some statistics
-    assert!(parsed.get("total_papers").is_some() || parsed.get("statistics").is_some() || parsed.get("venue").is_some());
+    assert!(
+        parsed.get("total_papers").is_some()
+            || parsed.get("statistics").is_some()
+            || parsed.get("venue").is_some()
+    );
 }
 
 // =============================================================================

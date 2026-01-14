@@ -55,9 +55,12 @@ async fn test_citation_snowball_forward() {
     // Seed paper batch
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Seed Paper", 2020, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Seed Paper",
+            2020,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -78,15 +81,22 @@ async fn test_citation_snowball_forward() {
     let tool = CitationSnowballTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "direction": "citations",
-            "depth": 1
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "direction": "citations",
+                "depth": 1
+            }),
+        )
         .await
         .unwrap();
 
-    assert!(result.contains("Citing Paper") || result.contains("snowball") || result.contains("Citation"));
+    assert!(
+        result.contains("Citing Paper")
+            || result.contains("snowball")
+            || result.contains("Citation")
+    );
 }
 
 #[tokio::test]
@@ -95,9 +105,12 @@ async fn test_citation_snowball_backward() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Seed Paper", 2022, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Seed Paper",
+            2022,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -118,11 +131,14 @@ async fn test_citation_snowball_backward() {
     let tool = CitationSnowballTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "direction": "references",
-            "depth": 1
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "direction": "references",
+                "depth": 1
+            }),
+        )
         .await
         .unwrap();
 
@@ -135,9 +151,12 @@ async fn test_citation_snowball_both_directions() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Both Directions", 2021, 200)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Both Directions",
+            2021,
+            200
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -163,15 +182,20 @@ async fn test_citation_snowball_both_directions() {
     let tool = CitationSnowballTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "direction": "both",
-            "depth": 1
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "direction": "both",
+                "depth": 1
+            }),
+        )
         .await
         .unwrap();
 
-    assert!(result.contains("Citer") || result.contains("Referenced") || result.contains("snowball"));
+    assert!(
+        result.contains("Citer") || result.contains("Referenced") || result.contains("snowball")
+    );
 }
 
 #[tokio::test]
@@ -180,9 +204,12 @@ async fn test_citation_snowball_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "JSON Seed", 2021, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "JSON Seed",
+            2021,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -208,15 +235,20 @@ async fn test_citation_snowball_json_format() {
     let tool = CitationSnowballTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
-    assert!(parsed.get("seed_papers").is_some() || parsed.get("papers").is_some() || parsed.is_array());
+    assert!(
+        parsed.get("seed_papers").is_some() || parsed.get("papers").is_some() || parsed.is_array()
+    );
 }
 
 #[tokio::test]
@@ -225,9 +257,12 @@ async fn test_citation_snowball_depth_2() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Deep Seed", 2020, 150)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Deep Seed",
+            2020,
+            150
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -255,11 +290,14 @@ async fn test_citation_snowball_depth_2() {
     let tool = CitationSnowballTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "direction": "citations",
-            "depth": 2
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "direction": "citations",
+                "depth": 2
+            }),
+        )
         .await
         .unwrap();
 
@@ -273,9 +311,12 @@ async fn test_citation_snowball_deduplication() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Dedup Seed", 2020, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Dedup Seed",
+            2020,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -295,11 +336,14 @@ async fn test_citation_snowball_deduplication() {
     let tool = CitationSnowballTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "direction": "citations",
-            "deduplicate": true
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "direction": "citations",
+                "deduplicate": true
+            }),
+        )
         .await
         .unwrap();
 
@@ -312,9 +356,12 @@ async fn test_citation_snowball_min_citations_filter() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Filter Seed", 2020, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Filter Seed",
+            2020,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -334,11 +381,14 @@ async fn test_citation_snowball_min_citations_filter() {
     let tool = CitationSnowballTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "direction": "citations",
-            "minCitations": 100
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "direction": "citations",
+                "minCitations": 100
+            }),
+        )
         .await
         .unwrap();
 
@@ -357,12 +407,12 @@ async fn test_exhaustive_search_fields_of_study_filter() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(
-            vec![
-                sample_paper("cs", "CS Paper", 2023, 100),
-            ],
-            None,
-        )))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(search_result(
+                vec![sample_paper("cs", "CS Paper", 2023, 100)],
+                None,
+            )),
+        )
         .mount(&mock_server)
         .await;
 
@@ -370,10 +420,13 @@ async fn test_exhaustive_search_fields_of_study_filter() {
     let tool = ExhaustiveSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "machine learning",
-            "fieldsOfStudy": ["Computer Science"]
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "machine learning",
+                "fieldsOfStudy": ["Computer Science"]
+            }),
+        )
         .await
         .unwrap();
 
@@ -397,10 +450,13 @@ async fn test_exhaustive_search_open_access_only() {
     let tool = ExhaustiveSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "biology",
-            "openAccessOnly": true
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "biology",
+                "openAccessOnly": true
+            }),
+        )
         .await
         .unwrap();
 
@@ -429,10 +485,13 @@ async fn test_recommendations_with_negative_seeds() {
     let tool = RecommendationsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "positivePaperIds": ["pos1", "pos2"],
-            "negativePaperIds": ["neg1"]
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "positivePaperIds": ["pos1", "pos2"],
+                "negativePaperIds": ["neg1"]
+            }),
+        )
         .await
         .unwrap();
 
@@ -458,10 +517,13 @@ async fn test_recommendations_with_limit() {
     let tool = RecommendationsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "positivePaperIds": ["single"],
-            "limit": 5
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "positivePaperIds": ["single"],
+                "limit": 5
+            }),
+        )
         .await
         .unwrap();
 
@@ -486,10 +548,13 @@ async fn test_recommendations_fields_of_study_filter() {
     let tool = RecommendationsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "positivePaperIds": ["field_seed"],
-            "fieldsOfStudy": ["Physics"]
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "positivePaperIds": ["field_seed"],
+                "fieldsOfStudy": ["Physics"]
+            }),
+        )
         .await
         .unwrap();
 
@@ -590,9 +655,12 @@ async fn test_bulk_boolean_search_basic() {
     let tool = BulkBooleanSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "+transformer +attention -BERT"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "+transformer +attention -BERT"
+            }),
+        )
         .await
         .unwrap();
 
@@ -616,13 +684,16 @@ async fn test_bulk_boolean_search_with_filters() {
     let tool = BulkBooleanSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "+machine +learning",
-            "yearStart": 2020,
-            "yearEnd": 2024,
-            "minCitations": 50,
-            "venue": "NeurIPS"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "+machine +learning",
+                "yearStart": 2020,
+                "yearEnd": 2024,
+                "minCitations": 50,
+                "venue": "NeurIPS"
+            }),
+        )
         .await
         .unwrap();
 
@@ -646,10 +717,13 @@ async fn test_bulk_boolean_search_json_format() {
     let tool = BulkBooleanSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test query",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test query",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -665,9 +739,7 @@ async fn test_bulk_boolean_search_pagination() {
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search/bulk"))
         .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(
-            vec![
-                sample_paper("p1", "Page 1 Paper", 2023, 100),
-            ],
+            vec![sample_paper("p1", "Page 1 Paper", 2023, 100)],
             Some("next_token_123"),
         )))
         .expect(1)
@@ -679,10 +751,13 @@ async fn test_bulk_boolean_search_pagination() {
 
     // Should handle pagination internally (though wiremock will only return first page)
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "maxResults": 1  // Limit to prevent infinite loop
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "maxResults": 1  // Limit to prevent infinite loop
+            }),
+        )
         .await
         .unwrap();
 
@@ -706,10 +781,13 @@ async fn test_bulk_boolean_search_with_sort() {
     let tool = BulkBooleanSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "+citation +analysis",
-            "sort": "citationCount:desc"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "+citation +analysis",
+                "sort": "citationCount:desc"
+            }),
+        )
         .await
         .unwrap();
 
@@ -725,7 +803,11 @@ fn test_bulk_boolean_search_tool_name() {
 #[test]
 fn test_bulk_boolean_search_tool_description() {
     let tool = BulkBooleanSearchTool;
-    assert!(tool.description().contains("boolean") || tool.description().contains("bulk") || tool.description().contains("10M"));
+    assert!(
+        tool.description().contains("boolean")
+            || tool.description().contains("bulk")
+            || tool.description().contains("10M")
+    );
 }
 
 #[test]
@@ -771,8 +853,18 @@ async fn test_snippet_search_basic() {
     Mock::given(method("GET"))
         .and(path("/graph/v1/snippet/search"))
         .respond_with(ResponseTemplate::new(200).set_body_json(snippet_search_result(vec![
-            sample_snippet("p1", "Method Paper", "We propose a novel approach to transformers...", "body"),
-            sample_snippet("p2", "Results Paper", "Our method achieves state-of-the-art performance...", "abstract"),
+            sample_snippet(
+                "p1",
+                "Method Paper",
+                "We propose a novel approach to transformers...",
+                "body",
+            ),
+            sample_snippet(
+                "p2",
+                "Results Paper",
+                "Our method achieves state-of-the-art performance...",
+                "abstract",
+            ),
         ])))
         .mount(&mock_server)
         .await;
@@ -781,9 +873,12 @@ async fn test_snippet_search_basic() {
     let tool = SnippetSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "transformer architecture"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "transformer architecture"
+            }),
+        )
         .await
         .unwrap();
 
@@ -806,13 +901,16 @@ async fn test_snippet_search_with_filters() {
     let tool = SnippetSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "neural networks",
-            "yearStart": 2020,
-            "yearEnd": 2024,
-            "fieldsOfStudy": ["Computer Science"],
-            "minCitations": 10
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "neural networks",
+                "yearStart": 2020,
+                "yearEnd": 2024,
+                "fieldsOfStudy": ["Computer Science"],
+                "minCitations": 10
+            }),
+        )
         .await
         .unwrap();
 
@@ -835,10 +933,13 @@ async fn test_snippet_search_json_format() {
     let tool = SnippetSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "deep learning",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "deep learning",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -862,10 +963,13 @@ async fn test_snippet_search_with_limit() {
     let tool = SnippetSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "attention mechanism",
-            "limit": 10
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "attention mechanism",
+                "limit": 10
+            }),
+        )
         .await
         .unwrap();
 
@@ -886,9 +990,12 @@ async fn test_snippet_search_empty_results() {
     let tool = SnippetSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "very obscure topic xyz123"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "very obscure topic xyz123"
+            }),
+        )
         .await
         .unwrap();
 
@@ -904,7 +1011,11 @@ fn test_snippet_search_tool_name() {
 #[test]
 fn test_snippet_search_tool_description() {
     let tool = SnippetSearchTool;
-    assert!(tool.description().contains("snippet") || tool.description().contains("full-text") || tool.description().contains("highlight"));
+    assert!(
+        tool.description().contains("snippet")
+            || tool.description().contains("full-text")
+            || tool.description().contains("highlight")
+    );
 }
 
 #[test]

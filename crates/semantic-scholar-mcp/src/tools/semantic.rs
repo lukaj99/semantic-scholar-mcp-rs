@@ -65,7 +65,12 @@ impl McpTool for SemanticSearchTool {
         // Get recommendations using the seed paper
         let papers = ctx
             .client
-            .get_recommendations(std::slice::from_ref(&params.seed_paper_id), None, params.limit, fields::DEFAULT)
+            .get_recommendations(
+                std::slice::from_ref(&params.seed_paper_id),
+                None,
+                params.limit,
+                fields::DEFAULT,
+            )
             .await
             .map_err(ToolError::from)?;
 
@@ -100,7 +105,10 @@ impl McpTool for SemanticSearchTool {
                 if params.year_start.is_some() || params.year_end.is_some() {
                     output.push_str(&format!(
                         "**Year filter:** {}-{}\n",
-                        params.year_start.map(|y| y.to_string()).unwrap_or_else(|| "any".to_string()),
+                        params
+                            .year_start
+                            .map(|y| y.to_string())
+                            .unwrap_or_else(|| "any".to_string()),
                         params.year_end.map(|y| y.to_string()).unwrap_or_else(|| "any".to_string())
                     ));
                 }
@@ -260,17 +268,12 @@ impl McpTool for LiteratureReviewPipelineTool {
 
         // Step 2: Get recommendations from top results
         if params.include_recommendations && !search_papers.is_empty() {
-            let top_ids: Vec<String> = search_papers
-                .iter()
-                .take(5)
-                .map(|p| p.paper_id.clone())
-                .collect();
+            let top_ids: Vec<String> =
+                search_papers.iter().take(5).map(|p| p.paper_id.clone()).collect();
 
             if !top_ids.is_empty() {
-                if let Ok(rec_papers) = ctx
-                    .client
-                    .get_recommendations(&top_ids, None, 50, fields::DEFAULT)
-                    .await
+                if let Ok(rec_papers) =
+                    ctx.client.get_recommendations(&top_ids, None, 50, fields::DEFAULT).await
                 {
                     for paper in rec_papers {
                         total_found["recommendations"] =
@@ -287,18 +290,13 @@ impl McpTool for LiteratureReviewPipelineTool {
 
         // Step 3: Expand via citations
         if params.include_citations && !search_papers.is_empty() {
-            let top_ids: Vec<String> = search_papers
-                .iter()
-                .take(3)
-                .map(|p| p.paper_id.clone())
-                .collect();
+            let top_ids: Vec<String> =
+                search_papers.iter().take(3).map(|p| p.paper_id.clone()).collect();
 
             for seed_id in top_ids {
                 // Get citations
-                if let Ok(citations) = ctx
-                    .client
-                    .get_citations(&seed_id, 0, 20, fields::DEFAULT)
-                    .await
+                if let Ok(citations) =
+                    ctx.client.get_citations(&seed_id, 0, 20, fields::DEFAULT).await
                 {
                     for ctx_paper in citations.data {
                         if let Some(paper) = ctx_paper.paper {
@@ -314,10 +312,7 @@ impl McpTool for LiteratureReviewPipelineTool {
                 }
 
                 // Get references
-                if let Ok(refs) = ctx
-                    .client
-                    .get_references(&seed_id, 0, 20, fields::DEFAULT)
-                    .await
+                if let Ok(refs) = ctx.client.get_references(&seed_id, 0, 20, fields::DEFAULT).await
                 {
                     for ctx_paper in refs.data {
                         if let Some(paper) = ctx_paper.paper {
@@ -392,11 +387,7 @@ impl McpTool for LiteratureReviewPipelineTool {
                 );
 
                 for (i, paper) in paper_list.iter().take(50).enumerate() {
-                    output.push_str(&format!(
-                        "### {}. {}\n",
-                        i + 1,
-                        paper.title_or_default()
-                    ));
+                    output.push_str(&format!("### {}. {}\n", i + 1, paper.title_or_default()));
                     output.push_str(&formatters::format_paper_markdown(paper, i + 1));
                 }
 

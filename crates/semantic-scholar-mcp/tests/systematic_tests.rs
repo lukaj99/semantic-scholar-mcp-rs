@@ -66,10 +66,7 @@ async fn test_prisma_search_single_query() {
     let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"queries": ["machine learning"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"queries": ["machine learning"]})).await.unwrap();
 
     assert!(result.contains("PRISMA") || result.contains("Search"));
     assert!(result.contains("PRISMA Paper 1") || result.contains("machine"));
@@ -92,9 +89,12 @@ async fn test_prisma_search_multiple_queries() {
     let tool = PrismaSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "queries": ["deep learning", "neural networks", "transformers"]
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "queries": ["deep learning", "neural networks", "transformers"]
+            }),
+        )
         .await
         .unwrap();
 
@@ -118,10 +118,13 @@ async fn test_prisma_search_json_format() {
     let tool = PrismaSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "queries": ["test"],
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "queries": ["test"],
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -149,11 +152,14 @@ async fn test_prisma_search_with_year_filter() {
     let tool = PrismaSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "queries": ["test"],
-            "yearStart": 2020,
-            "yearEnd": 2024
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "queries": ["test"],
+                "yearStart": 2020,
+                "yearEnd": 2024
+            }),
+        )
         .await
         .unwrap();
 
@@ -181,10 +187,13 @@ async fn test_prisma_search_with_citation_filter() {
     let tool = PrismaSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "queries": ["test"],
-            "minCitations": 100
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "queries": ["test"],
+                "minCitations": 100
+            }),
+        )
         .await
         .unwrap();
 
@@ -209,9 +218,12 @@ async fn test_prisma_search_deduplication_across_queries() {
     let tool = PrismaSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "queries": ["query1", "query2"]
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "queries": ["query1", "query2"]
+            }),
+        )
         .await
         .unwrap();
 
@@ -239,10 +251,7 @@ async fn test_screening_export_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["s1", "s2"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["s1", "s2"]})).await.unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert!(parsed.get("papers").is_some() || parsed.get("total").is_some());
@@ -254,9 +263,12 @@ async fn test_screening_export_with_abstract() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("abs", "Abstract Paper", 2023, 50)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "abs",
+            "Abstract Paper",
+            2023,
+            50
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -264,10 +276,13 @@ async fn test_screening_export_with_abstract() {
     let tool = ScreeningExportTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "paperIds": ["abs"],
-            "includeAbstract": true
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "paperIds": ["abs"],
+                "includeAbstract": true
+            }),
+        )
         .await
         .unwrap();
 
@@ -298,10 +313,13 @@ async fn test_screening_export_with_tldr() {
     let tool = ScreeningExportTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "paperIds": ["tldr"],
-            "includeTldr": true
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "paperIds": ["tldr"],
+                "includeTldr": true
+            }),
+        )
         .await
         .unwrap();
 
@@ -322,10 +340,7 @@ async fn test_screening_export_empty_papers() {
     let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["invalid"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["invalid"]})).await.unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert_eq!(parsed["total"], 0);
@@ -342,23 +357,30 @@ async fn test_prisma_flow_diagram_basic() {
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "identification": {
-                "databases": [
-                    {"name": "PubMed", "results": 500},
-                    {"name": "Scopus", "results": 300}
-                ]
-            },
-            "screening": {
-                "recordsAfterDedup": 700,
-                "recordsScreened": 700,
-                "recordsExcluded": 600
-            }
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "identification": {
+                    "databases": [
+                        {"name": "PubMed", "results": 500},
+                        {"name": "Scopus", "results": 300}
+                    ]
+                },
+                "screening": {
+                    "recordsAfterDedup": 700,
+                    "recordsScreened": 700,
+                    "recordsExcluded": 600
+                }
+            }),
+        )
         .await
         .unwrap();
 
-    assert!(result.contains("PRISMA") || result.contains("IDENTIFICATION") || result.contains("SCREENING"));
+    assert!(
+        result.contains("PRISMA")
+            || result.contains("IDENTIFICATION")
+            || result.contains("SCREENING")
+    );
 }
 
 #[tokio::test]
@@ -368,17 +390,20 @@ async fn test_prisma_flow_diagram_json_format() {
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "identification": {
-                "databases": [{"name": "Test", "results": 100}]
-            },
-            "screening": {
-                "recordsAfterDedup": 90,
-                "recordsScreened": 90,
-                "recordsExcluded": 80
-            },
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "identification": {
+                    "databases": [{"name": "Test", "results": 100}]
+                },
+                "screening": {
+                    "recordsAfterDedup": 90,
+                    "recordsScreened": 90,
+                    "recordsExcluded": 80
+                },
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -393,25 +418,32 @@ async fn test_prisma_flow_diagram_with_eligibility() {
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "identification": {
-                "databases": [{"name": "DB1", "results": 200}]
-            },
-            "screening": {
-                "recordsAfterDedup": 180,
-                "recordsScreened": 180,
-                "recordsExcluded": 150
-            },
-            "eligibility": {
-                "reportsSought": 30,
-                "reportsAssessed": 30,
-                "reportsExcluded": 10
-            }
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "identification": {
+                    "databases": [{"name": "DB1", "results": 200}]
+                },
+                "screening": {
+                    "recordsAfterDedup": 180,
+                    "recordsScreened": 180,
+                    "recordsExcluded": 150
+                },
+                "eligibility": {
+                    "reportsSought": 30,
+                    "reportsAssessed": 30,
+                    "reportsExcluded": 10
+                }
+            }),
+        )
         .await
         .unwrap();
 
-    assert!(result.contains("ELIGIBILITY") || result.contains("eligibility") || result.contains("reports"));
+    assert!(
+        result.contains("ELIGIBILITY")
+            || result.contains("eligibility")
+            || result.contains("reports")
+    );
 }
 
 #[tokio::test]
@@ -421,24 +453,29 @@ async fn test_prisma_flow_diagram_with_included() {
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "identification": {
-                "databases": [{"name": "DB", "results": 100}]
-            },
-            "screening": {
-                "recordsAfterDedup": 90,
-                "recordsScreened": 90,
-                "recordsExcluded": 70
-            },
-            "included": {
-                "studiesIncluded": 15,
-                "reportsIncluded": 20
-            }
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "identification": {
+                    "databases": [{"name": "DB", "results": 100}]
+                },
+                "screening": {
+                    "recordsAfterDedup": 90,
+                    "recordsScreened": 90,
+                    "recordsExcluded": 70
+                },
+                "included": {
+                    "studiesIncluded": 15,
+                    "reportsIncluded": 20
+                }
+            }),
+        )
         .await
         .unwrap();
 
-    assert!(result.contains("INCLUDED") || result.contains("included") || result.contains("studies"));
+    assert!(
+        result.contains("INCLUDED") || result.contains("included") || result.contains("studies")
+    );
 }
 
 #[tokio::test]
@@ -448,43 +485,46 @@ async fn test_prisma_flow_diagram_full() {
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "identification": {
-                "databases": [
-                    {"name": "PubMed", "results": 1000},
-                    {"name": "Scopus", "results": 800},
-                    {"name": "Web of Science", "results": 600}
-                ],
-                "otherSources": [
-                    {"name": "Grey literature", "records": 50}
-                ]
-            },
-            "screening": {
-                "recordsAfterDedup": 2000,
-                "recordsScreened": 2000,
-                "recordsExcluded": 1800,
-                "exclusionReasons": {
-                    "Not relevant": 1000,
-                    "Wrong study type": 500,
-                    "Duplicate": 300
-                }
-            },
-            "eligibility": {
-                "reportsSought": 200,
-                "reportsNotRetrieved": 10,
-                "reportsAssessed": 190,
-                "reportsExcluded": 140,
-                "exclusionReasons": {
-                    "No full text": 50,
-                    "Wrong outcome": 90
-                }
-            },
-            "included": {
-                "studiesIncluded": 50,
-                "reportsIncluded": 60
-            },
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "identification": {
+                    "databases": [
+                        {"name": "PubMed", "results": 1000},
+                        {"name": "Scopus", "results": 800},
+                        {"name": "Web of Science", "results": 600}
+                    ],
+                    "otherSources": [
+                        {"name": "Grey literature", "records": 50}
+                    ]
+                },
+                "screening": {
+                    "recordsAfterDedup": 2000,
+                    "recordsScreened": 2000,
+                    "recordsExcluded": 1800,
+                    "exclusionReasons": {
+                        "Not relevant": 1000,
+                        "Wrong study type": 500,
+                        "Duplicate": 300
+                    }
+                },
+                "eligibility": {
+                    "reportsSought": 200,
+                    "reportsNotRetrieved": 10,
+                    "reportsAssessed": 190,
+                    "reportsExcluded": 140,
+                    "exclusionReasons": {
+                        "No full text": 50,
+                        "Wrong outcome": 90
+                    }
+                },
+                "included": {
+                    "studiesIncluded": 50,
+                    "reportsIncluded": 60
+                },
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -499,24 +539,29 @@ async fn test_prisma_flow_diagram_with_other_sources() {
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "identification": {
-                "databases": [{"name": "Main DB", "results": 100}],
-                "otherSources": [
-                    {"name": "Manual search", "records": 20},
-                    {"name": "Citation search", "records": 15}
-                ]
-            },
-            "screening": {
-                "recordsAfterDedup": 120,
-                "recordsScreened": 120,
-                "recordsExcluded": 100
-            }
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "identification": {
+                    "databases": [{"name": "Main DB", "results": 100}],
+                    "otherSources": [
+                        {"name": "Manual search", "records": 20},
+                        {"name": "Citation search", "records": 15}
+                    ]
+                },
+                "screening": {
+                    "recordsAfterDedup": 120,
+                    "recordsScreened": 120,
+                    "recordsExcluded": 100
+                }
+            }),
+        )
         .await
         .unwrap();
 
-    assert!(result.contains("other") || result.contains("Manual") || result.contains("IDENTIFICATION"));
+    assert!(
+        result.contains("other") || result.contains("Manual") || result.contains("IDENTIFICATION")
+    );
 }
 
 // =============================================================================

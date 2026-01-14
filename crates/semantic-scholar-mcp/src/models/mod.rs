@@ -9,7 +9,9 @@ mod inputs;
 mod paper;
 
 pub use author::{Author, AuthorRef, AuthorSearchResult};
-pub use enums::{ExportFormat, PearlGrowingStrategy, ResponseFormat, SearchDirection, TrendGranularity};
+pub use enums::{
+    ExportFormat, PearlGrowingStrategy, ResponseFormat, SearchDirection, TrendGranularity,
+};
 pub use inputs::*;
 pub use paper::{
     AutocompleteMatch, AutocompleteResult, BulkSearchResult, CitationResult, ExternalIds,

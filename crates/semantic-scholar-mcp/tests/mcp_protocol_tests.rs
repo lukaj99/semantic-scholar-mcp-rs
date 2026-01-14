@@ -149,10 +149,7 @@ fn test_tool_error_response() {
         }
     });
 
-    assert!(error_response["error"]["data"]["reason"]
-        .as_str()
-        .unwrap()
-        .contains("Rate"));
+    assert!(error_response["error"]["data"]["reason"].as_str().unwrap().contains("Rate"));
 }
 
 // =============================================================================

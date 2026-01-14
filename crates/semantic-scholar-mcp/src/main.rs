@@ -3,9 +3,9 @@
 //! Provides both stdio (for Claude Desktop) and HTTP transports.
 
 use clap::Parser;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-use semantic_scholar_mcp::{config::Config, server::McpServer, SemanticScholarClient};
+use semantic_scholar_mcp::{SemanticScholarClient, config::Config, server::McpServer};
 
 #[derive(Parser, Debug)]
 #[command(name = "semantic-scholar-mcp")]
@@ -47,19 +47,14 @@ enum Transport {
 }
 
 fn init_tracing(log_level: &str, json: bool) {
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new(log_level));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(log_level));
 
     let subscriber = tracing_subscriber::registry().with(filter);
 
     if json {
-        subscriber
-            .with(tracing_subscriber::fmt::layer().json())
-            .init();
+        subscriber.with(tracing_subscriber::fmt::layer().json()).init();
     } else {
-        subscriber
-            .with(tracing_subscriber::fmt::layer().compact())
-            .init();
+        subscriber.with(tracing_subscriber::fmt::layer().compact()).init();
     }
 }
 

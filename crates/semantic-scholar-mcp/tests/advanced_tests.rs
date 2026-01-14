@@ -66,9 +66,12 @@ async fn test_pearl_growing_basic() {
     // Seed papers batch
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Deep Learning Survey", 2022, 500)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Deep Learning Survey",
+            2022,
+            500
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -110,10 +113,8 @@ async fn test_pearl_growing_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
-    let result = tool
-        .execute(&ctx, json!({"seedPaperIds": ["seed1"], "iterations": 1}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"seedPaperIds": ["seed1"], "iterations": 1})).await.unwrap();
 
     assert!(result.contains("Pearl Growing") || result.contains("pearl"));
     assert!(result.contains("Deep Learning Survey") || result.contains("seed"));
@@ -125,9 +126,10 @@ async fn test_pearl_growing_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "ML Paper", 2022, 100)
-        ])))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!([sample_paper("seed1", "ML Paper", 2022, 100)])),
+        )
         .mount(&mock_server)
         .await;
 
@@ -149,10 +151,13 @@ async fn test_pearl_growing_json_format() {
     let tool = PearlGrowingTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -173,10 +178,7 @@ async fn test_pearl_growing_no_valid_seeds() {
     let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
-    let result = tool
-        .execute(&ctx, json!({"seedPaperIds": ["invalid"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"seedPaperIds": ["invalid"]})).await.unwrap();
 
     assert!(result.contains("No valid seed") || result.contains("error"));
 }
@@ -187,9 +189,12 @@ async fn test_pearl_growing_keywords_strategy() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Quantum Computing Research", 2022, 300)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Quantum Computing Research",
+            2022,
+            300
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -206,11 +211,14 @@ async fn test_pearl_growing_keywords_strategy() {
     let tool = PearlGrowingTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "strategy": "keywords",
-            "iterations": 1
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "strategy": "keywords",
+                "iterations": 1
+            }),
+        )
         .await
         .unwrap();
 
@@ -223,9 +231,12 @@ async fn test_pearl_growing_authors_strategy() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Author Paper", 2022, 200)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Author Paper",
+            2022,
+            200
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -242,11 +253,14 @@ async fn test_pearl_growing_authors_strategy() {
     let tool = PearlGrowingTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "strategy": "authors",
-            "iterations": 1
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "strategy": "authors",
+                "iterations": 1
+            }),
+        )
         .await
         .unwrap();
 
@@ -259,9 +273,12 @@ async fn test_pearl_growing_citations_strategy() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Citation Paper", 2022, 150)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Citation Paper",
+            2022,
+            150
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -279,11 +296,14 @@ async fn test_pearl_growing_citations_strategy() {
     let tool = PearlGrowingTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "strategy": "citations",
-            "iterations": 1
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "strategy": "citations",
+                "iterations": 1
+            }),
+        )
         .await
         .unwrap();
 
@@ -296,9 +316,12 @@ async fn test_pearl_growing_multiple_iterations() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("seed1", "Initial Paper", 2022, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "seed1",
+            "Initial Paper",
+            2022,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -323,15 +346,20 @@ async fn test_pearl_growing_multiple_iterations() {
     let tool = PearlGrowingTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperIds": ["seed1"],
-            "iterations": 2,
-            "maxPapersPerIteration": 10
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperIds": ["seed1"],
+                "iterations": 2,
+                "maxPapersPerIteration": 10
+            }),
+        )
         .await
         .unwrap();
 
-    assert!(result.contains("Iteration") || result.contains("iteration") || result.contains("Paper"));
+    assert!(
+        result.contains("Iteration") || result.contains("iteration") || result.contains("Paper")
+    );
 }
 
 // =============================================================================
@@ -351,10 +379,7 @@ async fn test_orcid_lookup_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
-    let result = tool
-        .execute(&ctx, json!({"orcid": "0000-0002-1825-0097"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"orcid": "0000-0002-1825-0097"})).await.unwrap();
 
     assert!(result.contains("John Smith") || result.contains("ORCID"));
 }
@@ -373,10 +398,13 @@ async fn test_orcid_lookup_json_format() {
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "orcid": "0000-0001-2345-6789",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "orcid": "0000-0001-2345-6789",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -391,7 +419,9 @@ async fn test_orcid_lookup_with_papers() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/ORCID:0000-0003-1234-5678"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("a789", "Research Prof")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(sample_author("a789", "Research Prof")),
+        )
         .mount(&mock_server)
         .await;
 
@@ -411,11 +441,14 @@ async fn test_orcid_lookup_with_papers() {
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "orcid": "0000-0003-1234-5678",
-            "includePapers": true,
-            "maxPapers": 10
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "orcid": "0000-0003-1234-5678",
+                "includePapers": true,
+                "maxPapers": 10
+            }),
+        )
         .await
         .unwrap();
 
@@ -445,11 +478,14 @@ async fn test_orcid_lookup_with_papers_json() {
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "orcid": "0000-0002-9999-8888",
-            "includePapers": true,
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "orcid": "0000-0002-9999-8888",
+                "includePapers": true,
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -470,9 +506,7 @@ async fn test_orcid_lookup_not_found() {
     let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
-    let result = tool
-        .execute(&ctx, json!({"orcid": "0000-0000-0000-0000"}))
-        .await;
+    let result = tool.execute(&ctx, json!({"orcid": "0000-0000-0000-0000"})).await;
 
     assert!(result.is_err());
 }
@@ -497,12 +531,11 @@ async fn test_orcid_lookup_affiliations() {
     let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
-    let result = tool
-        .execute(&ctx, json!({"orcid": "0000-0001-1111-2222"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"orcid": "0000-0001-1111-2222"})).await.unwrap();
 
-    assert!(result.contains("Harvard") || result.contains("Affiliated") || result.contains("DeepMind"));
+    assert!(
+        result.contains("Harvard") || result.contains("Affiliated") || result.contains("DeepMind")
+    );
 }
 
 // =============================================================================

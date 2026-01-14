@@ -112,11 +112,8 @@ fn format_bibtex(papers: &[Paper], include_abstract: bool) -> String {
     for paper in papers {
         let first_author = paper.first_author().unwrap_or("Unknown");
         let year = paper.year.unwrap_or(0);
-        let key = format!(
-            "{}{}",
-            first_author.split_whitespace().last().unwrap_or("Unknown"),
-            year
-        );
+        let key =
+            format!("{}{}", first_author.split_whitespace().last().unwrap_or("Unknown"), year);
 
         output.push_str(&format!("@article{{{key},\n"));
         output.push_str(&format!("  title = {{{}}},\n", escape_bibtex(paper.title_or_default())));
@@ -242,7 +239,11 @@ fn csv_escape(s: &str) -> String {
     if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
         // Prefix with single quote to prevent formula injection in spreadsheets
         let escaped = s.replace('"', "\"\"");
-        if escaped.starts_with('=') || escaped.starts_with('+') || escaped.starts_with('-') || escaped.starts_with('@') {
+        if escaped.starts_with('=')
+            || escaped.starts_with('+')
+            || escaped.starts_with('-')
+            || escaped.starts_with('@')
+        {
             format!("\"'{}\"", escaped)
         } else {
             format!("\"{}\"", escaped)

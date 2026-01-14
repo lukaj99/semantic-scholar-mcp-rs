@@ -1,6 +1,6 @@
 //! JSON output formatting with token efficiency.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::models::{Author, Paper};
 
@@ -18,11 +18,8 @@ pub fn compact_paper(paper: &Paper) -> Value {
 
     // Add authors as names only
     if !paper.authors.is_empty() {
-        obj["authors"] = json!(paper
-            .authors
-            .iter()
-            .filter_map(|a| a.name.as_ref())
-            .collect::<Vec<_>>());
+        obj["authors"] =
+            json!(paper.authors.iter().filter_map(|a| a.name.as_ref()).collect::<Vec<_>>());
     }
 
     // Add optional fields only if present

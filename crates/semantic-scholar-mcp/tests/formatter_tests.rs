@@ -63,10 +63,7 @@ fn test_format_paper_markdown_with_authors() {
 fn test_format_paper_markdown_many_authors() {
     let mut paper = make_paper("abc123", "Test", 2024, 10);
     paper.authors = (0..20)
-        .map(|i| AuthorRef {
-            author_id: Some(format!("a{i}")),
-            name: Some(format!("Author {i}")),
-        })
+        .map(|i| AuthorRef { author_id: Some(format!("a{i}")), name: Some(format!("Author {i}")) })
         .collect();
 
     let output = formatters::format_paper_markdown(&paper, 1);
@@ -115,10 +112,8 @@ fn test_format_paper_markdown_empty_fields_of_study() {
 #[test]
 fn test_format_paper_markdown_with_doi() {
     let mut paper = make_paper("abc123", "Test", 2024, 10);
-    paper.external_ids = Some(ExternalIds {
-        doi: Some("10.1234/test".to_string()),
-        ..Default::default()
-    });
+    paper.external_ids =
+        Some(ExternalIds { doi: Some("10.1234/test".to_string()), ..Default::default() });
 
     let output = formatters::format_paper_markdown(&paper, 1);
     assert!(output.contains("[DOI](https://doi.org/10.1234/test)"));
@@ -127,10 +122,8 @@ fn test_format_paper_markdown_with_doi() {
 #[test]
 fn test_format_paper_markdown_with_arxiv() {
     let mut paper = make_paper("abc123", "Test", 2024, 10);
-    paper.external_ids = Some(ExternalIds {
-        arxiv: Some("2401.12345".to_string()),
-        ..Default::default()
-    });
+    paper.external_ids =
+        Some(ExternalIds { arxiv: Some("2401.12345".to_string()), ..Default::default() });
 
     let output = formatters::format_paper_markdown(&paper, 1);
     assert!(output.contains("[arXiv](https://arxiv.org/abs/2401.12345)"));
@@ -159,10 +152,7 @@ fn test_format_paper_markdown_with_pdf() {
 #[test]
 fn test_format_paper_markdown_with_tldr() {
     let mut paper = make_paper("abc123", "Test", 2024, 10);
-    paper.tldr = Some(Tldr {
-        text: Some("This is a short summary.".to_string()),
-        model: None,
-    });
+    paper.tldr = Some(Tldr { text: Some("This is a short summary.".to_string()), model: None });
 
     let output = formatters::format_paper_markdown(&paper, 1);
     assert!(output.contains("> **TLDR**: This is a short summary."));
@@ -207,11 +197,7 @@ fn test_format_paper_markdown_zero_citations() {
 
 #[test]
 fn test_format_paper_markdown_missing_title() {
-    let paper = Paper {
-        paper_id: "abc123".to_string(),
-        title: None,
-        ..Default::default()
-    };
+    let paper = Paper { paper_id: "abc123".to_string(), title: None, ..Default::default() };
 
     let output = formatters::format_paper_markdown(&paper, 1);
     assert!(output.contains("Untitled"));
@@ -296,10 +282,8 @@ fn test_format_papers_markdown_multiple() {
 
 #[test]
 fn test_format_papers_markdown_separators() {
-    let papers = vec![
-        make_paper("abc1", "Paper One", 2024, 100),
-        make_paper("abc2", "Paper Two", 2023, 50),
-    ];
+    let papers =
+        vec![make_paper("abc1", "Paper One", 2024, 100), make_paper("abc2", "Paper Two", 2023, 50)];
     let output = formatters::format_papers_markdown(&papers);
 
     // Should have separators between papers
@@ -386,10 +370,7 @@ fn test_format_authors_markdown_empty() {
 
 #[test]
 fn test_format_authors_markdown_multiple() {
-    let authors = vec![
-        make_author("a1", "Alice", 30, 10000),
-        make_author("a2", "Bob", 20, 5000),
-    ];
+    let authors = vec![make_author("a1", "Alice", 30, 10000), make_author("a2", "Bob", 20, 5000)];
     let output = formatters::format_authors_markdown(&authors);
 
     assert!(output.contains("# Authors (2 results)"));
@@ -457,10 +438,8 @@ fn test_compact_paper_without_venue() {
 #[test]
 fn test_compact_paper_with_doi() {
     let mut paper = make_paper("abc123", "Test", 2024, 10);
-    paper.external_ids = Some(ExternalIds {
-        doi: Some("10.1234/test".to_string()),
-        ..Default::default()
-    });
+    paper.external_ids =
+        Some(ExternalIds { doi: Some("10.1234/test".to_string()), ..Default::default() });
 
     let compact = formatters::compact_paper(&paper);
     assert_eq!(compact["doi"], "10.1234/test");
@@ -469,10 +448,8 @@ fn test_compact_paper_with_doi() {
 #[test]
 fn test_compact_paper_with_arxiv() {
     let mut paper = make_paper("abc123", "Test", 2024, 10);
-    paper.external_ids = Some(ExternalIds {
-        arxiv: Some("2401.12345".to_string()),
-        ..Default::default()
-    });
+    paper.external_ids =
+        Some(ExternalIds { arxiv: Some("2401.12345".to_string()), ..Default::default() });
 
     let compact = formatters::compact_paper(&paper);
     assert_eq!(compact["arxiv"], "2401.12345");
@@ -493,10 +470,7 @@ fn test_compact_paper_with_pdf() {
 #[test]
 fn test_compact_paper_with_tldr() {
     let mut paper = make_paper("abc123", "Test", 2024, 10);
-    paper.tldr = Some(Tldr {
-        text: Some("Short summary".to_string()),
-        model: None,
-    });
+    paper.tldr = Some(Tldr { text: Some("Short summary".to_string()), model: None });
 
     let compact = formatters::compact_paper(&paper);
     assert_eq!(compact["tldr"], "Short summary");
@@ -536,11 +510,7 @@ fn test_compact_paper_null_year() {
 
 #[test]
 fn test_compact_paper_missing_title() {
-    let paper = Paper {
-        paper_id: "abc123".to_string(),
-        title: None,
-        ..Default::default()
-    };
+    let paper = Paper { paper_id: "abc123".to_string(), title: None, ..Default::default() };
 
     let compact = formatters::compact_paper(&paper);
     assert_eq!(compact["title"], "Untitled");

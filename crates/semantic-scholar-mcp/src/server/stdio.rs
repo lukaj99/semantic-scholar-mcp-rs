@@ -38,11 +38,8 @@ pub async fn run_stdio(tools: Vec<Box<dyn McpTool>>, ctx: ToolContext) -> anyhow
         let request: JsonRpcRequest = match serde_json::from_str(trimmed) {
             Ok(req) => req,
             Err(e) => {
-                let error_response = JsonRpcResponse::error(
-                    None,
-                    -32700,
-                    format!("Parse error: {}", e),
-                );
+                let error_response =
+                    JsonRpcResponse::error(None, -32700, format!("Parse error: {}", e));
                 let response_json = serde_json::to_string(&error_response)?;
                 stdout.write_all(response_json.as_bytes()).await?;
                 stdout.write_all(b"\n").await?;
@@ -86,10 +83,8 @@ async fn handle_request(
 }
 
 fn handle_initialize(id: Option<serde_json::Value>, params: &serde_json::Value) -> JsonRpcResponse {
-    let protocol_version = params
-        .get("protocolVersion")
-        .and_then(|v| v.as_str())
-        .unwrap_or("2024-11-05");
+    let protocol_version =
+        params.get("protocolVersion").and_then(|v| v.as_str()).unwrap_or("2024-11-05");
 
     tracing::info!("MCP initialize: protocol version {}", protocol_version);
 
@@ -139,10 +134,7 @@ async fn handle_tools_call(
         }
     };
 
-    let arguments = params
-        .get("arguments")
-        .cloned()
-        .unwrap_or(serde_json::json!({}));
+    let arguments = params.get("arguments").cloned().unwrap_or(serde_json::json!({}));
 
     let tool = match tools.iter().find(|t| t.name() == tool_name) {
         Some(t) => t,

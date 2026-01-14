@@ -11,19 +11,23 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{
-    McpTool, ToolContext,
-    // Export
-    ReferenceExportTool,
-    // Systematic
-    PrismaSearchTool, ScreeningExportTool,
     // Networks
     AuthorNetworkTool,
+    // Bibliometrics
+    FieldWeightedImpactTool,
+    HighlyCitedPapersTool,
+    McpTool,
+    // Systematic
+    PrismaSearchTool,
+    // Export
+    ReferenceExportTool,
     // Trends
-    ResearchTrendsTool, VenueAnalyticsTool,
+    ResearchTrendsTool,
+    ScreeningExportTool,
     // Semantic
     SemanticSearchTool,
-    // Bibliometrics
-    FieldWeightedImpactTool, HighlyCitedPapersTool,
+    ToolContext,
+    VenueAnalyticsTool,
 };
 
 fn setup_test_context(mock_server: &MockServer) -> ToolContext {
@@ -67,19 +71,19 @@ async fn test_export_ris_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "Test Paper", 2023, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "Test Paper",
+            2023,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "format": "ris"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"], "format": "ris"})).await.unwrap();
 
     assert!(result.contains("TY  - JOUR"));
     assert!(result.contains("TI  - Test Paper"));
@@ -94,19 +98,19 @@ async fn test_export_bibtex_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "Machine Learning Paper", 2024, 50)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "Machine Learning Paper",
+            2024,
+            50
+        )])))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "format": "bibtex"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"], "format": "bibtex"})).await.unwrap();
 
     assert!(result.contains("@article{"));
     assert!(result.contains("title = {Machine Learning Paper}"));
@@ -120,19 +124,17 @@ async fn test_export_csv_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "CSV Test", 2023, 100)
-        ])))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!([sample_paper("p1", "CSV Test", 2023, 100)])),
+        )
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "format": "csv"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"], "format": "csv"})).await.unwrap();
 
     // Check CSV header
     assert!(result.contains("paper_id,title,authors,year,venue,citations,doi"));
@@ -147,9 +149,12 @@ async fn test_export_csv_without_abstract() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "No Abstract Test", 2023, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "No Abstract Test",
+            2023,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -157,11 +162,14 @@ async fn test_export_csv_without_abstract() {
     let tool = ReferenceExportTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "paperIds": ["p1"],
-            "format": "csv",
-            "includeAbstract": false
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "paperIds": ["p1"],
+                "format": "csv",
+                "includeAbstract": false
+            }),
+        )
         .await
         .unwrap();
 
@@ -176,19 +184,20 @@ async fn test_export_endnote_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "EndNote Test", 2023, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "EndNote Test",
+            2023,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "format": "endnote"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperIds": ["p1"], "format": "endnote"})).await.unwrap();
 
     assert!(result.contains("%0 Journal Article"));
     assert!(result.contains("%T EndNote Test"));
@@ -217,9 +226,7 @@ async fn test_export_missing_metadata() {
     let tool = ReferenceExportTool;
 
     // Should not crash with missing fields
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "format": "ris"}))
-        .await;
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"], "format": "ris"})).await;
 
     assert!(result.is_ok());
 }
@@ -240,10 +247,8 @@ async fn test_export_multiple_papers() {
     let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1", "p2"], "format": "bibtex"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperIds": ["p1", "p2"], "format": "bibtex"})).await.unwrap();
 
     assert!(result.contains("Paper One"));
     assert!(result.contains("Paper Two"));
@@ -275,10 +280,7 @@ async fn test_prisma_search_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"queries": ["machine learning"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"queries": ["machine learning"]})).await.unwrap();
 
     assert!(result.contains("PRISMA Paper 1"));
 }
@@ -302,10 +304,13 @@ async fn test_prisma_search_deduplication() {
     let tool = PrismaSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "queries": ["query1", "query2"],
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "queries": ["query1", "query2"],
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -328,19 +333,19 @@ async fn test_screening_export_basic() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "Screening Paper", 2023, 100)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "Screening Paper",
+            2023,
+            100
+        )])))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"]})).await.unwrap();
 
     assert!(result.contains("Screening Paper"));
 }
@@ -368,10 +373,8 @@ async fn test_screening_export_with_tldr() {
     let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "includeTldr": true}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperIds": ["p1"], "includeTldr": true})).await.unwrap();
 
     assert!(result.contains("TLDR Paper"));
 }
@@ -427,13 +430,14 @@ async fn test_author_network_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorId": "123"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorId": "123"})).await.unwrap();
 
     // Should contain collaborator information
-    assert!(result.contains("Collaborator") || result.contains("collaborator") || result.contains("network"));
+    assert!(
+        result.contains("Collaborator")
+            || result.contains("collaborator")
+            || result.contains("network")
+    );
 }
 
 // =============================================================================
@@ -462,11 +466,14 @@ async fn test_research_trends_basic() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "machine learning",
-            "yearStart": 2022,
-            "yearEnd": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "machine learning",
+                "yearStart": 2022,
+                "yearEnd": 2023
+            }),
+        )
         .await
         .unwrap();
 
@@ -498,10 +505,7 @@ async fn test_venue_analytics_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
-    let result = tool
-        .execute(&ctx, json!({"venueQuery": "Nature"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"venueQuery": "Nature"})).await.unwrap();
 
     assert!(result.contains("Nature") || result.contains("papers") || result.contains("venue"));
 }
@@ -528,10 +532,7 @@ async fn test_semantic_search_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"seedPaperId": "seed123"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"seedPaperId": "seed123"})).await.unwrap();
 
     assert!(result.contains("Similar Paper"));
 }
@@ -555,10 +556,13 @@ async fn test_semantic_search_with_year_filter() {
     let tool = SemanticSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperId": "seed123",
-            "yearStart": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperId": "seed123",
+                "yearStart": 2023
+            }),
+        )
         .await
         .unwrap();
 
@@ -610,10 +614,7 @@ async fn test_fwci_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"]})).await.unwrap();
 
     // Should contain FWCI calculation results
     assert!(result.contains("p1") || result.contains("FWCI") || result.contains("impact"));
@@ -671,13 +672,12 @@ async fn test_highly_cited_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = HighlyCitedPapersTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1", "p2"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1", "p2"]})).await.unwrap();
 
     // Should identify the highly cited paper
-    assert!(result.contains("Highly Cited") || result.contains("p1") || result.contains("percentile"));
+    assert!(
+        result.contains("Highly Cited") || result.contains("p1") || result.contains("percentile")
+    );
 }
 
 // =============================================================================
@@ -708,9 +708,7 @@ async fn test_export_invalid_format() {
     let tool = ReferenceExportTool;
 
     // Invalid format value
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "format": "invalid"}))
-        .await;
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"], "format": "invalid"})).await;
     assert!(result.is_err());
 }
 
@@ -721,8 +719,6 @@ async fn test_trends_missing_required() {
     let tool = ResearchTrendsTool;
 
     // Missing required yearStart/yearEnd
-    let result = tool
-        .execute(&ctx, json!({"query": "test"}))
-        .await;
+    let result = tool.execute(&ctx, json!({"query": "test"})).await;
     assert!(result.is_err());
 }

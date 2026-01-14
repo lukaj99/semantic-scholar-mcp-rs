@@ -62,11 +62,8 @@ impl McpTool for AuthorNetworkTool {
         let params: AuthorNetworkInput = serde_json::from_value(input)?;
 
         // Get author info
-        let author_info = ctx
-            .client
-            .get_author(&params.author_id)
-            .await
-            .map_err(ToolError::from)?;
+        let author_info =
+            ctx.client.get_author(&params.author_id).await.map_err(ToolError::from)?;
         let author_name = author_info.name_or_default().to_string();
 
         // Get author's papers

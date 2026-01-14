@@ -66,9 +66,7 @@ impl McpServer {
         tracing::info!("HTTP server listening on http://{}", addr);
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
-        axum::serve(listener, router)
-            .with_graceful_shutdown(shutdown_signal())
-            .await?;
+        axum::serve(listener, router).with_graceful_shutdown(shutdown_signal()).await?;
 
         tracing::info!("HTTP server shut down");
         Ok(())
@@ -77,19 +75,13 @@ impl McpServer {
     /// Get tool by name.
     #[must_use]
     pub fn get_tool(&self, name: &str) -> Option<&dyn McpTool> {
-        self.tools
-            .iter()
-            .find(|t| t.name() == name)
-            .map(|t| t.as_ref())
+        self.tools.iter().find(|t| t.name() == name).map(|t| t.as_ref())
     }
 
     /// List all available tools.
     #[must_use]
     pub fn list_tools(&self) -> Vec<(&str, &str)> {
-        self.tools
-            .iter()
-            .map(|t| (t.name(), t.description()))
-            .collect()
+        self.tools.iter().map(|t| (t.name(), t.description())).collect()
     }
 
     /// Get tool context for execution.
@@ -101,15 +93,11 @@ impl McpServer {
 
 impl std::fmt::Debug for McpServer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("McpServer")
-            .field("tools", &self.tools.len())
-            .finish()
+        f.debug_struct("McpServer").field("tools", &self.tools.len()).finish()
     }
 }
 
 async fn shutdown_signal() {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to install CTRL+C handler");
+    tokio::signal::ctrl_c().await.expect("Failed to install CTRL+C handler");
     tracing::info!("Received shutdown signal");
 }

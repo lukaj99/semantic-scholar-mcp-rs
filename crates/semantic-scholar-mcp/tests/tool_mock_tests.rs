@@ -12,8 +12,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{
-    ExhaustiveSearchTool, McpTool, RecommendationsTool, ToolContext,
-    BatchMetadataTool, AuthorSearchTool,
+    AuthorSearchTool, BatchMetadataTool, ExhaustiveSearchTool, McpTool, RecommendationsTool,
+    ToolContext,
 };
 
 /// Create a test context with a mock server.
@@ -73,10 +73,7 @@ async fn test_exhaustive_search_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "machine learning"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "machine learning"})).await.unwrap();
 
     assert!(result.contains("ML Paper One"));
     assert!(result.contains("ML Paper Two"));
@@ -103,10 +100,7 @@ async fn test_exhaustive_search_with_year_filter() {
     let tool = ExhaustiveSearchTool;
 
     // Filter to only 2024
-    let result = tool
-        .execute(&ctx, json!({"query": "test", "yearStart": 2024}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "test", "yearStart": 2024})).await.unwrap();
 
     // Should only include the 2024 paper
     assert!(result.contains("New Paper"));
@@ -132,10 +126,7 @@ async fn test_exhaustive_search_with_citation_filter() {
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "test", "minCitations": 100}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "test", "minCitations": 100})).await.unwrap();
 
     assert!(result.contains("Popular Paper"));
     assert!(!result.contains("Unpopular Paper"));
@@ -157,10 +148,8 @@ async fn test_exhaustive_search_json_format() {
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "test", "responseFormat": "json"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"query": "test", "responseFormat": "json"})).await.unwrap();
 
     // Should be valid JSON
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
@@ -197,10 +186,7 @@ async fn test_exhaustive_search_pagination() {
     let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "test", "maxResults": 200}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "test", "maxResults": 200})).await.unwrap();
 
     // Should include papers from both pages
     assert!(result.contains("Page 1 Paper"));
@@ -258,10 +244,7 @@ async fn test_recommendations_single_seed() {
     let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
-    let result = tool
-        .execute(&ctx, json!({"positivePaperIds": ["seed123"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"positivePaperIds": ["seed123"]})).await.unwrap();
 
     assert!(result.contains("Recommended Paper 1"));
     assert!(result.contains("Recommended Paper 2"));
@@ -284,10 +267,7 @@ async fn test_recommendations_multiple_seeds() {
     let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
-    let result = tool
-        .execute(&ctx, json!({"positivePaperIds": ["seed1", "seed2"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"positivePaperIds": ["seed1", "seed2"]})).await.unwrap();
 
     assert!(result.contains("Multi-Seed Rec"));
 }
@@ -310,10 +290,13 @@ async fn test_recommendations_json_format() {
     let tool = RecommendationsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "positivePaperIds": ["seed123"],
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "positivePaperIds": ["seed123"],
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -341,10 +324,7 @@ async fn test_batch_metadata_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1", "p2"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1", "p2"]})).await.unwrap();
 
     assert!(result.contains("Batch Paper 1"));
     assert!(result.contains("Batch Paper 2"));
@@ -368,10 +348,7 @@ async fn test_batch_metadata_with_nulls() {
     let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1", "invalid", "p3"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1", "invalid", "p3"]})).await.unwrap();
 
     // Should skip null and include valid papers
     assert!(result.contains("Valid Paper"));
@@ -416,10 +393,7 @@ async fn test_author_search_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "John Smith"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "John Smith"})).await.unwrap();
 
     assert!(result.contains("John Smith"));
     assert!(result.contains("MIT") || result.contains("Stanford"));

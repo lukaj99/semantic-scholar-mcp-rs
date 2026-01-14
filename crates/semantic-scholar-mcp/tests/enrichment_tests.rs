@@ -11,7 +11,7 @@ use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{
     AuthorBatchTool, AuthorPapersTool, AuthorSearchTool, BatchMetadataTool, McpTool,
-    PaperAutocompleteTool, PaperAuthorsTool, PaperTitleMatchTool, ToolContext,
+    PaperAuthorsTool, PaperAutocompleteTool, PaperTitleMatchTool, ToolContext,
 };
 
 fn setup_test_context(mock_server: &MockServer) -> ToolContext {
@@ -66,10 +66,7 @@ async fn test_batch_metadata_markdown_format() {
     let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1", "p2"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1", "p2"]})).await.unwrap();
 
     assert!(result.contains("Paper One"));
     assert!(result.contains("Paper Two"));
@@ -81,9 +78,12 @@ async fn test_batch_metadata_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "JSON Paper", 2023, 50)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "JSON Paper",
+            2023,
+            50
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -91,10 +91,13 @@ async fn test_batch_metadata_json_format() {
     let tool = BatchMetadataTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "paperIds": ["p1"],
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "paperIds": ["p1"],
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -118,10 +121,13 @@ async fn test_batch_metadata_custom_fields() {
     let tool = BatchMetadataTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "paperIds": ["p1"],
-            "fields": ["paperId", "title", "year"]
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "paperIds": ["p1"],
+                "fields": ["paperId", "title", "year"]
+            }),
+        )
         .await
         .unwrap();
 
@@ -141,10 +147,7 @@ async fn test_batch_metadata_empty_results() {
     let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["invalid1", "invalid2"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["invalid1", "invalid2"]})).await.unwrap();
 
     // Empty but not error
     assert!(result.is_empty() || result.contains("[]") || result.len() < 50);
@@ -190,10 +193,7 @@ async fn test_author_search_markdown_format() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "Smith"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "Smith"})).await.unwrap();
 
     assert!(result.contains("John Smith") || result.contains("Jane Smith"));
 }
@@ -215,10 +215,13 @@ async fn test_author_search_json_format() {
     let tool = AuthorSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "JSON Author",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "JSON Author",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -243,10 +246,13 @@ async fn test_author_search_with_limit() {
     let tool = AuthorSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "limit": 5
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "limit": 5
+            }),
+        )
         .await
         .unwrap();
 
@@ -269,10 +275,7 @@ async fn test_author_search_no_results() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "nonexistent xyz"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "nonexistent xyz"})).await.unwrap();
 
     // Empty but not error
     assert!(result.is_empty() || result.contains("[]") || result.len() < 50);
@@ -288,19 +291,19 @@ async fn test_author_papers_markdown_format() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/author123"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(
-            sample_author("author123", "Prolific Writer", 10000, 30)
-        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author(
+            "author123",
+            "Prolific Writer",
+            10000,
+            30,
+        )))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorPapersTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorId": "author123"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorId": "author123"})).await.unwrap();
 
     assert!(result.contains("Prolific Writer") || result.contains("author"));
 }
@@ -311,9 +314,12 @@ async fn test_author_papers_json_format() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/json_author"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(
-            sample_author("json_author", "JSON Author Papers", 2000, 18)
-        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author(
+            "json_author",
+            "JSON Author Papers",
+            2000,
+            18,
+        )))
         .mount(&mock_server)
         .await;
 
@@ -321,10 +327,13 @@ async fn test_author_papers_json_format() {
     let tool = AuthorPapersTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "authorId": "json_author",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "authorId": "json_author",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -355,9 +364,12 @@ async fn test_author_papers_with_year_filter() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/filtered"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(
-            sample_author("filtered", "Filtered Author", 5000, 22)
-        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author(
+            "filtered",
+            "Filtered Author",
+            5000,
+            22,
+        )))
         .mount(&mock_server)
         .await;
 
@@ -365,11 +377,14 @@ async fn test_author_papers_with_year_filter() {
     let tool = AuthorPapersTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "authorId": "filtered",
-            "yearStart": 2020,
-            "yearEnd": 2024
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "authorId": "filtered",
+                "yearStart": 2020,
+                "yearEnd": 2024
+            }),
+        )
         .await
         .unwrap();
 
@@ -437,7 +452,10 @@ fn test_author_papers_tool_input_schema() {
     let tool = AuthorPapersTool;
     let schema = tool.input_schema();
     assert!(schema.get("properties").is_some());
-    assert!(schema["properties"]["authorId"].is_object() || schema["properties"]["author_id"].is_object());
+    assert!(
+        schema["properties"]["authorId"].is_object()
+            || schema["properties"]["author_id"].is_object()
+    );
 }
 
 // =============================================================================
@@ -462,10 +480,7 @@ async fn test_paper_autocomplete_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = PaperAutocompleteTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "attention"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "attention"})).await.unwrap();
 
     assert!(result.contains("Attention") || result.contains("autocomplete"));
 }
@@ -486,10 +501,13 @@ async fn test_paper_autocomplete_json_format() {
     let tool = PaperAutocompleteTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -512,10 +530,7 @@ async fn test_paper_autocomplete_empty() {
     let ctx = setup_test_context(&mock_server);
     let tool = PaperAutocompleteTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "xyz123nonexistent"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "xyz123nonexistent"})).await.unwrap();
 
     assert!(result.contains("No suggestions") || result.contains("suggestions"));
 }
@@ -550,19 +565,19 @@ async fn test_paper_title_match_found() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search/match"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(
-            sample_paper("p1", "Attention Is All You Need", 2017, 50000)
-        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(sample_paper(
+            "p1",
+            "Attention Is All You Need",
+            2017,
+            50000,
+        )))
         .mount(&mock_server)
         .await;
 
     let ctx = setup_test_context(&mock_server);
     let tool = PaperTitleMatchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"title": "Attention Is All You Need"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"title": "Attention Is All You Need"})).await.unwrap();
 
     assert!(result.contains("Attention") || result.contains("Match"));
 }
@@ -580,10 +595,7 @@ async fn test_paper_title_match_not_found() {
     let ctx = setup_test_context(&mock_server);
     let tool = PaperTitleMatchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"title": "Nonexistent Paper XYZ"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"title": "Nonexistent Paper XYZ"})).await.unwrap();
 
     assert!(result.contains("No exact match") || result.contains("Match"));
 }
@@ -594,9 +606,12 @@ async fn test_paper_title_match_json_format() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search/match"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(
-            sample_paper("p1", "JSON Title Match", 2023, 100)
-        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(sample_paper(
+            "p1",
+            "JSON Title Match",
+            2023,
+            100,
+        )))
         .mount(&mock_server)
         .await;
 
@@ -604,10 +619,13 @@ async fn test_paper_title_match_json_format() {
     let tool = PaperTitleMatchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "title": "JSON Title Match",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "title": "JSON Title Match",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -657,10 +675,7 @@ async fn test_paper_authors_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = PaperAuthorsTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "p123"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperId": "p123"})).await.unwrap();
 
     assert!(result.contains("First Author") || result.contains("Authors"));
 }
@@ -681,10 +696,13 @@ async fn test_paper_authors_json_format() {
     let tool = PaperAuthorsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "paperId": "json_paper",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "paperId": "json_paper",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -732,10 +750,7 @@ async fn test_author_batch_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorBatchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorIds": ["a1", "a2"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorIds": ["a1", "a2"]})).await.unwrap();
 
     assert!(result.contains("Batch Author") || result.contains("Author"));
 }
@@ -746,9 +761,12 @@ async fn test_author_batch_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/author/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_author("a1", "JSON Batch Author", 2000, 18)
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_author(
+            "a1",
+            "JSON Batch Author",
+            2000,
+            18
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -756,10 +774,13 @@ async fn test_author_batch_json_format() {
     let tool = AuthorBatchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "authorIds": ["a1"],
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "authorIds": ["a1"],
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -776,7 +797,7 @@ async fn test_author_batch_partial_results() {
         .and(path("/graph/v1/author/batch"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!([
             sample_author("a1", "Valid Author", 1000, 10),
-            null,  // Invalid ID returns null
+            null, // Invalid ID returns null
             sample_author("a3", "Another Valid", 500, 5)
         ])))
         .mount(&mock_server)
@@ -785,10 +806,7 @@ async fn test_author_batch_partial_results() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorBatchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorIds": ["a1", "invalid", "a3"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorIds": ["a1", "invalid", "a3"]})).await.unwrap();
 
     assert!(result.contains("Valid Author") || result.contains("Found"));
 }

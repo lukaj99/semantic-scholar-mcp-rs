@@ -65,10 +65,7 @@ async fn test_semantic_search_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"seedPaperId": "seed123"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"seedPaperId": "seed123"})).await.unwrap();
 
     assert!(result.contains("Semantic Search") || result.contains("Similar"));
     assert!(result.contains("Similar Paper 1") || result.contains("sim1"));
@@ -92,10 +89,13 @@ async fn test_semantic_search_json_format() {
     let tool = SemanticSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperId": "json_seed",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperId": "json_seed",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -124,11 +124,14 @@ async fn test_semantic_search_year_filter() {
     let tool = SemanticSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperId": "filter_seed",
-            "yearStart": 2020,
-            "yearEnd": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperId": "filter_seed",
+                "yearStart": 2020,
+                "yearEnd": 2023
+            }),
+        )
         .await
         .unwrap();
 
@@ -151,10 +154,7 @@ async fn test_semantic_search_empty_results() {
     let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
-    let result = tool
-        .execute(&ctx, json!({"seedPaperId": "empty_seed"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"seedPaperId": "empty_seed"})).await.unwrap();
 
     assert!(result.contains("No similar") || result.contains('0') || result.contains("found"));
 }
@@ -178,10 +178,13 @@ async fn test_semantic_search_with_limit() {
     let tool = SemanticSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "seedPaperId": "limit_seed",
-            "limit": 50
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "seedPaperId": "limit_seed",
+                "limit": 50
+            }),
+        )
         .await
         .unwrap();
 
@@ -261,10 +264,7 @@ async fn test_literature_review_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "machine learning"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "machine learning"})).await.unwrap();
 
     assert!(result.contains("Literature Review") || result.contains("literature"));
 }
@@ -306,10 +306,13 @@ async fn test_literature_review_json_format() {
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "deep learning",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "deep learning",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -359,11 +362,14 @@ async fn test_literature_review_with_filters() {
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "neural networks",
-            "yearStart": 2020,
-            "minCitations": 100
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "neural networks",
+                "yearStart": 2020,
+                "minCitations": 100
+            }),
+        )
         .await
         .unwrap();
 
@@ -388,11 +394,14 @@ async fn test_literature_review_no_recommendations() {
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test query",
-            "includeRecommendations": false,
-            "includeCitations": false
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test query",
+                "includeRecommendations": false,
+                "includeCitations": false
+            }),
+        )
         .await
         .unwrap();
 
@@ -439,13 +448,12 @@ async fn test_literature_review_deduplication() {
     let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "dedupe test"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "dedupe test"})).await.unwrap();
 
     // Should show deduplication
-    assert!(result.contains("Duplicate") || result.contains("unique") || result.contains("Literature"));
+    assert!(
+        result.contains("Duplicate") || result.contains("unique") || result.contains("Literature")
+    );
 }
 
 #[tokio::test]
@@ -513,10 +521,13 @@ async fn test_literature_review_max_papers() {
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "max papers test",
-            "maxPapers": 2
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "max papers test",
+                "maxPapers": 2
+            }),
+        )
         .await
         .unwrap();
 
@@ -536,7 +547,11 @@ fn test_semantic_search_tool_name() {
 #[test]
 fn test_semantic_search_tool_description() {
     let tool = SemanticSearchTool;
-    assert!(tool.description().contains("semantic") || tool.description().contains("similar") || tool.description().len() > 10);
+    assert!(
+        tool.description().contains("semantic")
+            || tool.description().contains("similar")
+            || tool.description().len() > 10
+    );
 }
 
 #[test]

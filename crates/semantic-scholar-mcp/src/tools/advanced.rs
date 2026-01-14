@@ -9,7 +9,9 @@ use super::{McpTool, ToolContext};
 use crate::config::fields;
 use crate::error::{ToolError, ToolResult};
 use crate::formatters;
-use crate::models::{OrcidAuthorLookupInput, PearlGrowingInput, PearlGrowingStrategy, ResponseFormat};
+use crate::models::{
+    OrcidAuthorLookupInput, PearlGrowingInput, PearlGrowingStrategy, ResponseFormat,
+};
 
 /// Pearl growing search expansion tool.
 pub struct PearlGrowingTool;
@@ -134,12 +136,7 @@ impl McpTool for PearlGrowingTool {
                 for author_id in author_ids.iter().take(3) {
                     if let Ok(search_result) = ctx
                         .client
-                        .search_papers(
-                            &format!("author:{}", author_id),
-                            0,
-                            20,
-                            fields::DEFAULT,
-                        )
+                        .search_papers(&format!("author:{}", author_id), 0, 20, fields::DEFAULT)
                         .await
                     {
                         let mut new_count = 0;
@@ -167,11 +164,8 @@ impl McpTool for PearlGrowingTool {
                 params.strategy,
                 PearlGrowingStrategy::Citations | PearlGrowingStrategy::All
             ) {
-                let seed_ids: Vec<String> = current_seeds
-                    .iter()
-                    .take(5)
-                    .map(|p| p.paper_id.clone())
-                    .collect();
+                let seed_ids: Vec<String> =
+                    current_seeds.iter().take(5).map(|p| p.paper_id.clone()).collect();
 
                 if let Ok(recs) = ctx
                     .client
@@ -247,10 +241,8 @@ impl McpTool for PearlGrowingTool {
                 }
 
                 if final_papers.len() > 30 {
-                    output.push_str(&format!(
-                        "\n*... and {} more papers*",
-                        final_papers.len() - 30
-                    ));
+                    output
+                        .push_str(&format!("\n*... and {} more papers*", final_papers.len() - 30));
                 }
 
                 Ok(output)
@@ -289,16 +281,16 @@ fn extract_keywords(papers: &[crate::models::Paper]) -> Vec<String> {
         .expect("valid word regex pattern");
 
     for paper in papers {
-        let text = format!(
-            "{} {}",
-            paper.title_or_default(),
-            paper.r#abstract.as_deref().unwrap_or("")
-        );
+        let text =
+            format!("{} {}", paper.title_or_default(), paper.r#abstract.as_deref().unwrap_or(""));
 
         for cap in word_re.find_iter(&text.to_lowercase()) {
             let word = cap.as_str();
             // Filter out pure numbers and very short words
-            if word.len() >= 3 && !stopwords.contains(word) && !word.chars().all(|c| c.is_ascii_digit()) {
+            if word.len() >= 3
+                && !stopwords.contains(word)
+                && !word.chars().all(|c| c.is_ascii_digit())
+            {
                 *word_counts.entry(word.to_string()).or_insert(0) += 1;
             }
         }
@@ -372,11 +364,7 @@ impl McpTool for OrcidAuthorLookupTool {
         let author_id = format!("ORCID:{}", params.orcid);
 
         // Get author details
-        let author = ctx
-            .client
-            .get_author(&author_id)
-            .await
-            .map_err(ToolError::from)?;
+        let author = ctx.client.get_author(&author_id).await.map_err(ToolError::from)?;
 
         // Optionally get papers
         let mut papers = Vec::new();
@@ -438,10 +426,7 @@ impl McpTool for OrcidAuthorLookupTool {
                 }
 
                 if params.include_papers && !papers.is_empty() {
-                    output.push_str(&format!(
-                        "\n## Recent Papers ({} found)\n\n",
-                        papers.len()
-                    ));
+                    output.push_str(&format!("\n## Recent Papers ({} found)\n\n", papers.len()));
                     for (i, paper) in papers.iter().take(20).enumerate() {
                         output.push_str(&formatters::format_paper_markdown(paper, i + 1));
                     }

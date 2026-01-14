@@ -17,7 +17,11 @@ fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     ToolContext::new(Arc::new(client))
 }
 
-fn sample_paper_with_authors(id: &str, title: &str, authors: Vec<(&str, &str)>) -> serde_json::Value {
+fn sample_paper_with_authors(
+    id: &str,
+    title: &str,
+    authors: Vec<(&str, &str)>,
+) -> serde_json::Value {
     json!({
         "paperId": id,
         "title": title,
@@ -63,7 +67,9 @@ async fn test_author_network_basic() {
     // Author info
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/main_author"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("main_author", "Main Author")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(sample_author("main_author", "Main Author")),
+        )
         .mount(&mock_server)
         .await;
 
@@ -71,16 +77,24 @@ async fn test_author_network_basic() {
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper_with_authors("p1", "Collab Paper 1", vec![
-                ("main_author", "Main Author"),
-                ("collab1", "Collaborator One"),
-                ("collab2", "Collaborator Two"),
-            ]),
-            sample_paper_with_authors("p2", "Collab Paper 2", vec![
-                ("main_author", "Main Author"),
-                ("collab1", "Collaborator One"),  // Same collaborator
-                ("collab3", "Collaborator Three"),
-            ]),
+            sample_paper_with_authors(
+                "p1",
+                "Collab Paper 1",
+                vec![
+                    ("main_author", "Main Author"),
+                    ("collab1", "Collaborator One"),
+                    ("collab2", "Collaborator Two"),
+                ],
+            ),
+            sample_paper_with_authors(
+                "p2",
+                "Collab Paper 2",
+                vec![
+                    ("main_author", "Main Author"),
+                    ("collab1", "Collaborator One"), // Same collaborator
+                    ("collab3", "Collaborator Three"),
+                ],
+            ),
         ])))
         .mount(&mock_server)
         .await;
@@ -88,12 +102,11 @@ async fn test_author_network_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorId": "main_author"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorId": "main_author"})).await.unwrap();
 
-    assert!(result.contains("Collaboration") || result.contains("Author") || result.contains("network"));
+    assert!(
+        result.contains("Collaboration") || result.contains("Author") || result.contains("network")
+    );
 }
 
 #[tokio::test]
@@ -102,17 +115,20 @@ async fn test_author_network_json_format() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/json_author"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("json_author", "JSON Author")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(sample_author("json_author", "JSON Author")),
+        )
         .mount(&mock_server)
         .await;
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper_with_authors("p1", "JSON Paper", vec![
-                ("json_author", "JSON Author"),
-                ("other", "Other Author"),
-            ]),
+            sample_paper_with_authors(
+                "p1",
+                "JSON Paper",
+                vec![("json_author", "JSON Author"), ("other", "Other Author")],
+            ),
         ])))
         .mount(&mock_server)
         .await;
@@ -121,10 +137,13 @@ async fn test_author_network_json_format() {
     let tool = AuthorNetworkTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "authorId": "json_author",
-            "responseFormat": "json"
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "authorId": "json_author",
+                "responseFormat": "json"
+            }),
+        )
         .await
         .unwrap();
 
@@ -138,7 +157,10 @@ async fn test_author_network_min_shared_papers() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/filter_author"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("filter_author", "Filter Author")))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(sample_author("filter_author", "Filter Author")),
+        )
         .mount(&mock_server)
         .await;
 
@@ -146,19 +168,25 @@ async fn test_author_network_min_shared_papers() {
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper_with_authors("p1", "Paper 1", vec![
-                ("filter_author", "Filter Author"),
-                ("frequent", "Frequent Collab"),
-            ]),
-            sample_paper_with_authors("p2", "Paper 2", vec![
-                ("filter_author", "Filter Author"),
-                ("frequent", "Frequent Collab"),
-                ("rare", "Rare Collab"),
-            ]),
-            sample_paper_with_authors("p3", "Paper 3", vec![
-                ("filter_author", "Filter Author"),
-                ("frequent", "Frequent Collab"),
-            ]),
+            sample_paper_with_authors(
+                "p1",
+                "Paper 1",
+                vec![("filter_author", "Filter Author"), ("frequent", "Frequent Collab")],
+            ),
+            sample_paper_with_authors(
+                "p2",
+                "Paper 2",
+                vec![
+                    ("filter_author", "Filter Author"),
+                    ("frequent", "Frequent Collab"),
+                    ("rare", "Rare Collab"),
+                ],
+            ),
+            sample_paper_with_authors(
+                "p3",
+                "Paper 3",
+                vec![("filter_author", "Filter Author"), ("frequent", "Frequent Collab")],
+            ),
         ])))
         .mount(&mock_server)
         .await;
@@ -167,10 +195,13 @@ async fn test_author_network_min_shared_papers() {
     let tool = AuthorNetworkTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "authorId": "filter_author",
-            "minSharedPapers": 2
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "authorId": "filter_author",
+                "minSharedPapers": 2
+            }),
+        )
         .await
         .unwrap();
 
@@ -184,21 +215,27 @@ async fn test_author_network_max_collaborators() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/max_author"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("max_author", "Max Author")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(sample_author("max_author", "Max Author")),
+        )
         .mount(&mock_server)
         .await;
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper_with_authors("p1", "Paper", vec![
-                ("max_author", "Max Author"),
-                ("c1", "Collab 1"),
-                ("c2", "Collab 2"),
-                ("c3", "Collab 3"),
-                ("c4", "Collab 4"),
-                ("c5", "Collab 5"),
-            ]),
+            sample_paper_with_authors(
+                "p1",
+                "Paper",
+                vec![
+                    ("max_author", "Max Author"),
+                    ("c1", "Collab 1"),
+                    ("c2", "Collab 2"),
+                    ("c3", "Collab 3"),
+                    ("c4", "Collab 4"),
+                    ("c5", "Collab 5"),
+                ],
+            ),
         ])))
         .mount(&mock_server)
         .await;
@@ -207,10 +244,13 @@ async fn test_author_network_max_collaborators() {
     let tool = AuthorNetworkTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "authorId": "max_author",
-            "maxCollaborators": 3
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "authorId": "max_author",
+                "maxCollaborators": 3
+            }),
+        )
         .await
         .unwrap();
 
@@ -224,7 +264,9 @@ async fn test_author_network_no_collaborators() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/solo_author"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("solo_author", "Solo Author")))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(sample_author("solo_author", "Solo Author")),
+        )
         .mount(&mock_server)
         .await;
 
@@ -232,9 +274,7 @@ async fn test_author_network_no_collaborators() {
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper_with_authors("p1", "Solo Paper", vec![
-                ("solo_author", "Solo Author"),
-            ]),
+            sample_paper_with_authors("p1", "Solo Paper", vec![("solo_author", "Solo Author")]),
         ])))
         .mount(&mock_server)
         .await;
@@ -242,10 +282,7 @@ async fn test_author_network_no_collaborators() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorId": "solo_author"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorId": "solo_author"})).await.unwrap();
 
     assert!(result.contains("No collaborators") || result.contains('0') || result.contains("Solo"));
 }
@@ -256,7 +293,10 @@ async fn test_author_network_no_papers() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/no_papers"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("no_papers", "No Papers Author")))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(sample_author("no_papers", "No Papers Author")),
+        )
         .mount(&mock_server)
         .await;
 
@@ -269,12 +309,13 @@ async fn test_author_network_no_papers() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorId": "no_papers"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorId": "no_papers"})).await.unwrap();
 
-    assert!(result.contains('0') || result.contains("No collaborators") || result.contains("Collaboration"));
+    assert!(
+        result.contains('0')
+            || result.contains("No collaborators")
+            || result.contains("Collaboration")
+    );
 }
 
 #[tokio::test]
@@ -300,7 +341,10 @@ async fn test_author_network_pagination() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/author/paginated"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(sample_author("paginated", "Paginated Author")))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(sample_author("paginated", "Paginated Author")),
+        )
         .mount(&mock_server)
         .await;
 
@@ -324,12 +368,11 @@ async fn test_author_network_pagination() {
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
-    let result = tool
-        .execute(&ctx, json!({"authorId": "paginated"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"authorId": "paginated"})).await.unwrap();
 
-    assert!(result.contains("Friend") || result.contains("Collaboration") || result.contains("Author"));
+    assert!(
+        result.contains("Friend") || result.contains("Collaboration") || result.contains("Author")
+    );
 }
 
 // =============================================================================
@@ -345,7 +388,11 @@ fn test_author_network_tool_name() {
 #[test]
 fn test_author_network_tool_description() {
     let tool = AuthorNetworkTool;
-    assert!(tool.description().contains("collaboration") || tool.description().contains("network") || tool.description().len() > 10);
+    assert!(
+        tool.description().contains("collaboration")
+            || tool.description().contains("network")
+            || tool.description().len() > 10
+    );
 }
 
 #[test]

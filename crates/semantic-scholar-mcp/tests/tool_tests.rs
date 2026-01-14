@@ -14,7 +14,8 @@ use semantic_scholar_mcp::models::*;
 fn test_keyword_extraction_technical_terms() {
     // This tests the logic - we can't call extract_keywords directly
     // since it's private, but we verify the regex pattern works
-    let regex = regex::Regex::new(r"\b[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]\b|\b[a-zA-Z]{2,}\b").unwrap();
+    let regex =
+        regex::Regex::new(r"\b[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]\b|\b[a-zA-Z]{2,}\b").unwrap();
 
     let text = "GPT-4 and BERT for COVID-19 analysis with H2O";
     let lowercase = text.to_lowercase();
@@ -29,7 +30,8 @@ fn test_keyword_extraction_technical_terms() {
 /// Test that hyphenated terms are extracted
 #[test]
 fn test_keyword_extraction_hyphenated() {
-    let regex = regex::Regex::new(r"\b[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]\b|\b[a-zA-Z]{2,}\b").unwrap();
+    let regex =
+        regex::Regex::new(r"\b[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]\b|\b[a-zA-Z]{2,}\b").unwrap();
 
     let text = "cross-validated neural-network based approach";
     let lowercase = text.to_lowercase();
@@ -65,11 +67,7 @@ fn test_fwci_small_baseline() {
     let citations = 100;
     let avg_baseline = 0.01;
 
-    let fwci = if avg_baseline > 0.0 {
-        f64::from(citations) / avg_baseline
-    } else {
-        0.0
-    };
+    let fwci = if avg_baseline > 0.0 { f64::from(citations) / avg_baseline } else { 0.0 };
 
     assert!(fwci.is_finite(), "FWCI should be finite");
     assert!(fwci > 0.0, "FWCI should be positive");

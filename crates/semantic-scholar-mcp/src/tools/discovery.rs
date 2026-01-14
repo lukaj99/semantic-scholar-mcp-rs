@@ -81,11 +81,7 @@ impl McpTool for ExhaustiveSearchTool {
         let mut all_papers = Vec::new();
         let mut offset = 0;
         let limit = 100; // API max per page
-        let max_results = if params.max_results < 0 {
-            i32::MAX
-        } else {
-            params.max_results
-        };
+        let max_results = if params.max_results < 0 { i32::MAX } else { params.max_results };
 
         #[allow(clippy::cast_possible_wrap)]
         loop {
@@ -138,10 +134,7 @@ impl McpTool for ExhaustiveSearchTool {
         match params.response_format {
             ResponseFormat::Markdown => Ok(formatters::format_papers_markdown(&all_papers)),
             ResponseFormat::Json => {
-                let compact = all_papers
-                    .iter()
-                    .map(formatters::compact_paper)
-                    .collect::<Vec<_>>();
+                let compact = all_papers.iter().map(formatters::compact_paper).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&compact)?)
             }
         }
@@ -207,10 +200,7 @@ impl McpTool for RecommendationsTool {
         match params.response_format {
             ResponseFormat::Markdown => Ok(formatters::format_papers_markdown(&papers)),
             ResponseFormat::Json => {
-                let compact = papers
-                    .iter()
-                    .map(formatters::compact_paper)
-                    .collect::<Vec<_>>();
+                let compact = papers.iter().map(formatters::compact_paper).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&compact)?)
             }
         }
@@ -278,8 +268,8 @@ impl McpTool for CitationSnowballTool {
     async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String> {
         let params: CitationSnowballInput = serde_json::from_value(input)?;
 
-        use std::collections::{HashSet, VecDeque};
         use crate::models::SearchDirection;
+        use std::collections::{HashSet, VecDeque};
 
         let mut seen: HashSet<String> = HashSet::new();
         let mut papers = Vec::new();
@@ -297,10 +287,7 @@ impl McpTool for CitationSnowballTool {
             }
 
             // Get citations (forward)
-            if matches!(
-                params.direction,
-                SearchDirection::Citations | SearchDirection::Both
-            ) {
+            if matches!(params.direction, SearchDirection::Citations | SearchDirection::Both) {
                 let result = ctx
                     .client
                     .get_citations(&paper_id, 0, params.max_per_paper, fields::DEFAULT)
@@ -310,7 +297,8 @@ impl McpTool for CitationSnowballTool {
                     for ctx_paper in result.data {
                         if let Some(paper) = ctx_paper.paper {
                             // Filter by min_citations if set
-                            let passes_filter = params.min_citations
+                            let passes_filter = params
+                                .min_citations
                                 .map(|min| paper.citation_count.unwrap_or(0) >= min)
                                 .unwrap_or(true);
 
@@ -327,10 +315,7 @@ impl McpTool for CitationSnowballTool {
             }
 
             // Get references (backward)
-            if matches!(
-                params.direction,
-                SearchDirection::References | SearchDirection::Both
-            ) {
+            if matches!(params.direction, SearchDirection::References | SearchDirection::Both) {
                 let result = ctx
                     .client
                     .get_references(&paper_id, 0, params.max_per_paper, fields::DEFAULT)
@@ -340,7 +325,8 @@ impl McpTool for CitationSnowballTool {
                     for ctx_paper in result.data {
                         if let Some(paper) = ctx_paper.paper {
                             // Filter by min_citations if set
-                            let passes_filter = params.min_citations
+                            let passes_filter = params
+                                .min_citations
                                 .map(|min| paper.citation_count.unwrap_or(0) >= min)
                                 .unwrap_or(true);
 
@@ -374,10 +360,7 @@ impl McpTool for CitationSnowballTool {
                 Ok(output)
             }
             ResponseFormat::Json => {
-                let compact = papers
-                    .iter()
-                    .map(formatters::compact_paper)
-                    .collect::<Vec<_>>();
+                let compact = papers.iter().map(formatters::compact_paper).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&json!({
                     "seeds": params.seed_paper_ids,
                     "direction": params.direction,
@@ -544,10 +527,7 @@ impl McpTool for BulkBooleanSearchTool {
                 Ok(output)
             }
             ResponseFormat::Json => {
-                let compact = all_papers
-                    .iter()
-                    .map(formatters::compact_paper)
-                    .collect::<Vec<_>>();
+                let compact = all_papers.iter().map(formatters::compact_paper).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&json!({
                     "query": params.query,
                     "total": all_papers.len(),
@@ -674,7 +654,9 @@ impl McpTool for SnippetSearchTool {
                 );
 
                 for (i, snippet) in result.data.iter().enumerate() {
-                    let title = snippet.paper.as_ref()
+                    let title = snippet
+                        .paper
+                        .as_ref()
                         .and_then(|p| p.title.as_deref())
                         .unwrap_or("Unknown Title");
                     output.push_str(&format!("### {}. {}\n", i + 1, title));
@@ -684,7 +666,8 @@ impl McpTool for SnippetSearchTool {
                             output.push_str(&format!("**Year:** {}\n", year));
                         }
                         if !paper.authors.is_empty() {
-                            output.push_str(&format!("**Authors:** {}\n", paper.authors.join(", ")));
+                            output
+                                .push_str(&format!("**Authors:** {}\n", paper.authors.join(", ")));
                         }
                     }
                     output.push('\n');

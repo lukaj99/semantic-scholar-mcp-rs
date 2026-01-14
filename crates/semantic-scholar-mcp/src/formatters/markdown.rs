@@ -62,10 +62,7 @@ pub fn format_paper_markdown(paper: &Paper, index: usize) -> String {
     if let Some(arxiv) = paper.arxiv_id() {
         ids.push(format!("[arXiv](https://arxiv.org/abs/{arxiv})"));
     }
-    ids.push(format!(
-        "[S2](https://www.semanticscholar.org/paper/{})",
-        paper.paper_id
-    ));
+    ids.push(format!("[S2](https://www.semanticscholar.org/paper/{})", paper.paper_id));
 
     if !ids.is_empty() {
         output.push_str(&format!("**Links**: {}\n\n", ids.join(" | ")));
@@ -142,10 +139,7 @@ fn format_author_markdown_indexed(author: &Author, index: usize) -> String {
 
     // ORCID
     if let Some(orcid) = author.orcid() {
-        output.push_str(&format!(
-            "**ORCID**: [{}](https://orcid.org/{})\n\n",
-            orcid, orcid
-        ));
+        output.push_str(&format!("**ORCID**: [{}](https://orcid.org/{})\n\n", orcid, orcid));
     }
 
     // Homepage

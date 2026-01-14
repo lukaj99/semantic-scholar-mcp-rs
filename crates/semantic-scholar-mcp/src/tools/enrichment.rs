@@ -8,8 +8,8 @@ use crate::config::fields;
 use crate::error::{ToolError, ToolResult};
 use crate::formatters;
 use crate::models::{
-    AuthorBatchInput, AuthorPapersInput, AuthorSearchInput, BatchMetadataInput,
-    PaperAutocompleteInput, PaperAuthorsInput, PaperTitleMatchInput, ResponseFormat,
+    AuthorBatchInput, AuthorPapersInput, AuthorSearchInput, BatchMetadataInput, PaperAuthorsInput,
+    PaperAutocompleteInput, PaperTitleMatchInput, ResponseFormat,
 };
 
 /// Batch metadata retrieval tool.
@@ -69,10 +69,7 @@ impl McpTool for BatchMetadataTool {
         match params.response_format {
             ResponseFormat::Markdown => Ok(formatters::format_papers_markdown(&papers)),
             ResponseFormat::Json => {
-                let compact = papers
-                    .iter()
-                    .map(formatters::compact_paper)
-                    .collect::<Vec<_>>();
+                let compact = papers.iter().map(formatters::compact_paper).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&compact)?)
             }
         }
@@ -127,11 +124,8 @@ impl McpTool for AuthorSearchTool {
         match params.response_format {
             ResponseFormat::Markdown => Ok(formatters::format_authors_markdown(&result.data)),
             ResponseFormat::Json => {
-                let compact = result
-                    .data
-                    .iter()
-                    .map(formatters::compact_author)
-                    .collect::<Vec<_>>();
+                let compact =
+                    result.data.iter().map(formatters::compact_author).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&compact)?)
             }
         }
@@ -186,11 +180,7 @@ impl McpTool for AuthorPapersTool {
         let params: AuthorPapersInput = serde_json::from_value(input)?;
 
         // Get author info first
-        let author = ctx
-            .client
-            .get_author(&params.author_id)
-            .await
-            .map_err(ToolError::from)?;
+        let author = ctx.client.get_author(&params.author_id).await.map_err(ToolError::from)?;
 
         // TODO: Implement paginated author papers fetch
         // For now, return author info with a placeholder
@@ -242,11 +232,8 @@ impl McpTool for PaperAutocompleteTool {
     async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String> {
         let params: PaperAutocompleteInput = serde_json::from_value(input)?;
 
-        let matches = ctx
-            .client
-            .autocomplete_papers(&params.query)
-            .await
-            .map_err(ToolError::from)?;
+        let matches =
+            ctx.client.autocomplete_papers(&params.query).await.map_err(ToolError::from)?;
 
         match params.response_format {
             ResponseFormat::Markdown => {
@@ -265,24 +252,17 @@ impl McpTool for PaperAutocompleteTool {
 
                 for (i, m) in matches.iter().enumerate() {
                     let title = m.match_.as_deref().unwrap_or("Unknown");
-                    output.push_str(&format!(
-                        "{}. **{}**\n   - ID: `{}`\n\n",
-                        i + 1,
-                        title,
-                        m.id
-                    ));
+                    output.push_str(&format!("{}. **{}**\n   - ID: `{}`\n\n", i + 1, title, m.id));
                 }
                 Ok(output)
             }
-            ResponseFormat::Json => {
-                Ok(serde_json::to_string_pretty(&json!({
-                    "query": params.query,
-                    "suggestions": matches.iter().map(|m| json!({
-                        "id": m.id,
-                        "title": m.match_
-                    })).collect::<Vec<_>>()
-                }))?)
-            }
+            ResponseFormat::Json => Ok(serde_json::to_string_pretty(&json!({
+                "query": params.query,
+                "suggestions": matches.iter().map(|m| json!({
+                    "id": m.id,
+                    "title": m.match_
+                })).collect::<Vec<_>>()
+            }))?),
         }
     }
 }
@@ -331,10 +311,8 @@ impl McpTool for PaperTitleMatchTool {
         match params.response_format {
             ResponseFormat::Markdown => {
                 if let Some(p) = paper {
-                    let mut output = format!(
-                        "# Paper Title Match\n\n**Query:** `{}`\n\n---\n\n",
-                        params.title
-                    );
+                    let mut output =
+                        format!("# Paper Title Match\n\n**Query:** `{}`\n\n---\n\n", params.title);
                     output.push_str(&formatters::format_paper_markdown(&p, 1));
                     Ok(output)
                 } else {
@@ -398,11 +376,8 @@ impl McpTool for PaperAuthorsTool {
     async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String> {
         let params: PaperAuthorsInput = serde_json::from_value(input)?;
 
-        let authors = ctx
-            .client
-            .get_paper_authors(&params.paper_id)
-            .await
-            .map_err(ToolError::from)?;
+        let authors =
+            ctx.client.get_paper_authors(&params.paper_id).await.map_err(ToolError::from)?;
 
         match params.response_format {
             ResponseFormat::Markdown => {
@@ -415,10 +390,7 @@ impl McpTool for PaperAuthorsTool {
                 Ok(output)
             }
             ResponseFormat::Json => {
-                let compact = authors
-                    .iter()
-                    .map(formatters::compact_author)
-                    .collect::<Vec<_>>();
+                let compact = authors.iter().map(formatters::compact_author).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&json!({
                     "paperId": params.paper_id,
                     "authors": compact
@@ -465,11 +437,8 @@ impl McpTool for AuthorBatchTool {
     async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String> {
         let params: AuthorBatchInput = serde_json::from_value(input)?;
 
-        let authors = ctx
-            .client
-            .get_authors_batch(&params.author_ids)
-            .await
-            .map_err(ToolError::from)?;
+        let authors =
+            ctx.client.get_authors_batch(&params.author_ids).await.map_err(ToolError::from)?;
 
         match params.response_format {
             ResponseFormat::Markdown => {
@@ -482,10 +451,7 @@ impl McpTool for AuthorBatchTool {
                 Ok(output)
             }
             ResponseFormat::Json => {
-                let compact = authors
-                    .iter()
-                    .map(formatters::compact_author)
-                    .collect::<Vec<_>>();
+                let compact = authors.iter().map(formatters::compact_author).collect::<Vec<_>>();
                 Ok(serde_json::to_string_pretty(&json!({
                     "requested": params.author_ids.len(),
                     "found": authors.len(),

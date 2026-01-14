@@ -13,14 +13,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::{
+    Json, Router,
     extract::{Query, State},
     http::{HeaderMap, StatusCode},
     response::{
-        sse::{Event, KeepAlive, Sse},
         IntoResponse, Response,
+        sse::{Event, KeepAlive, Sse},
     },
     routing::{get, post},
-    Json, Router,
 };
 use futures::stream::{self, Stream, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -69,12 +69,7 @@ impl JsonRpcResponse {
 
     #[must_use]
     pub fn success(id: Option<serde_json::Value>, result: serde_json::Value) -> Self {
-        Self {
-            jsonrpc: Cow::Borrowed(Self::VERSION),
-            result: Some(result),
-            error: None,
-            id,
-        }
+        Self { jsonrpc: Cow::Borrowed(Self::VERSION), result: Some(result), error: None, id }
     }
 
     #[must_use]
@@ -82,11 +77,7 @@ impl JsonRpcResponse {
         Self {
             jsonrpc: Cow::Borrowed(Self::VERSION),
             result: None,
-            error: Some(JsonRpcError {
-                code,
-                message: message.into(),
-                data: None,
-            }),
+            error: Some(JsonRpcError { code, message: message.into(), data: None }),
             id,
         }
     }
@@ -137,12 +128,7 @@ pub fn create_router(
 
     let base_url = base_url.unwrap_or_else(|| "https://scholar.jovanovic.org.uk".to_string());
 
-    let state = Arc::new(HttpState {
-        tools,
-        ctx,
-        sessions,
-        base_url,
-    });
+    let state = Arc::new(HttpState { tools, ctx, sessions, base_url });
 
     Router::new()
         .route("/", get(health_check))
@@ -196,10 +182,7 @@ async fn handle_mcp_post(
     tracing::debug!(method = %req.method, "Handling MCP POST request");
 
     // Get or create session
-    let session = state
-        .sessions
-        .get_or_create_session(query.session_id.as_deref())
-        .await;
+    let session = state.sessions.get_or_create_session(query.session_id.as_deref()).await;
 
     // Check if this is a notification (no id)
     let is_notification = req.id.is_none();
@@ -208,12 +191,8 @@ async fn handle_mcp_post(
         "initialize" => {
             let result = handle_initialize(&req.params);
 
-            let mut response =
-                Json(JsonRpcResponse::success(req.id, result)).into_response();
-            response.headers_mut().insert(
-                "Mcp-Session-Id",
-                session.id.to_header_value(),
-            );
+            let mut response = Json(JsonRpcResponse::success(req.id, result)).into_response();
+            response.headers_mut().insert("Mcp-Session-Id", session.id.to_header_value());
             return response;
         }
         "notifications/initialized" | "initialized" => {
@@ -250,17 +229,12 @@ async fn handle_mcp_post(
             if is_notification {
                 return StatusCode::ACCEPTED.into_response();
             }
-            JsonRpcResponse::error(
-                req.id,
-                -32601,
-                format!("Method not found: {}", req.method),
-            )
+            JsonRpcResponse::error(req.id, -32601, format!("Method not found: {}", req.method))
         }
     };
 
     let mut res = Json(response).into_response();
-    res.headers_mut()
-        .insert("Mcp-Session-Id", session.id.to_header_value());
+    res.headers_mut().insert("Mcp-Session-Id", session.id.to_header_value());
     res
 }
 
@@ -288,10 +262,7 @@ async fn handle_mcp_get(
         .unwrap_or(0);
 
     // Get or create session
-    let session = state
-        .sessions
-        .get_or_create_session(query.session_id.as_deref())
-        .await;
+    let session = state.sessions.get_or_create_session(query.session_id.as_deref()).await;
 
     tracing::info!(
         session_id = %session.id,
@@ -303,15 +274,9 @@ async fn handle_mcp_get(
     let stream = build_sse_stream(session, last_event_id).await;
 
     (
-        [
-            ("X-Accel-Buffering", "no"),
-            ("Cache-Control", "no-cache, no-store, must-revalidate"),
-        ],
-        Sse::new(stream).keep_alive(
-            KeepAlive::new()
-                .interval(Duration::from_secs(15))
-                .text("ping"),
-        ),
+        [("X-Accel-Buffering", "no"), ("Cache-Control", "no-cache, no-store, must-revalidate")],
+        Sse::new(stream)
+            .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)).text("ping")),
     )
 }
 
@@ -373,9 +338,7 @@ async fn handle_sse_legacy(
     });
 
     // Push endpoint event to session (for replay)
-    session
-        .push_event("endpoint", endpoint_data.to_string())
-        .await;
+    session.push_event("endpoint", endpoint_data.to_string()).await;
 
     // Build stream
     let stream = build_sse_stream_with_endpoint(session, last_event_id, endpoint_data).await;
@@ -386,11 +349,8 @@ async fn handle_sse_legacy(
             ("Cache-Control", "no-cache, no-store, must-revalidate"),
             ("Connection", "keep-alive"),
         ],
-        Sse::new(stream).keep_alive(
-            KeepAlive::new()
-                .interval(Duration::from_secs(15))
-                .text("ping"),
-        ),
+        Sse::new(stream)
+            .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)).text("ping")),
     )
 }
 
@@ -403,10 +363,7 @@ async fn build_sse_stream_with_endpoint(
     // Initial endpoint event (always send first)
     let initial_event = if last_event_id == 0 {
         Some(Ok::<_, Infallible>(
-            Event::default()
-                .id("0")
-                .event("endpoint")
-                .data(endpoint_data.to_string()),
+            Event::default().id("0").event("endpoint").data(endpoint_data.to_string()),
         ))
     } else {
         None
@@ -433,10 +390,8 @@ async fn build_sse_stream_with_endpoint(
 }
 
 fn handle_initialize(params: &serde_json::Value) -> serde_json::Value {
-    let protocol_version = params
-        .get("protocolVersion")
-        .and_then(|v| v.as_str())
-        .unwrap_or("2024-11-05");
+    let protocol_version =
+        params.get("protocolVersion").and_then(|v| v.as_str()).unwrap_or("2024-11-05");
 
     tracing::info!("MCP initialize: protocol version {}", protocol_version);
 
@@ -484,10 +439,7 @@ async fn handle_tools_call(
         }
     };
 
-    let arguments = params
-        .get("arguments")
-        .cloned()
-        .unwrap_or(serde_json::json!({}));
+    let arguments = params.get("arguments").cloned().unwrap_or(serde_json::json!({}));
 
     let tool = match state.tools.iter().find(|t| t.name() == tool_name) {
         Some(t) => t,

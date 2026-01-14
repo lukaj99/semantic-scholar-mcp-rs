@@ -67,43 +67,31 @@ impl ClientError {
     /// Create a rate limited error with retry-after duration.
     #[must_use]
     pub fn rate_limited(seconds: u64) -> Self {
-        Self::RateLimited {
-            retry_after: Duration::from_secs(seconds),
-        }
+        Self::RateLimited { retry_after: Duration::from_secs(seconds) }
     }
 
     /// Create a not found error.
     #[must_use]
     pub fn not_found(resource: impl Into<String>) -> Self {
-        Self::NotFound {
-            resource: resource.into(),
-        }
+        Self::NotFound { resource: resource.into() }
     }
 
     /// Create a bad request error.
     #[must_use]
     pub fn bad_request(message: impl Into<String>) -> Self {
-        Self::BadRequest {
-            message: message.into(),
-        }
+        Self::BadRequest { message: message.into() }
     }
 
     /// Create a server error.
     #[must_use]
     pub fn server(status: u16, message: impl Into<String>) -> Self {
-        Self::Server {
-            status,
-            message: message.into(),
-        }
+        Self::Server { status, message: message.into() }
     }
 
     /// Returns true if this error is retryable.
     #[must_use]
     pub const fn is_retryable(&self) -> bool {
-        matches!(
-            self,
-            Self::RateLimited { .. } | Self::Timeout(_) | Self::Server { .. }
-        )
+        matches!(self, Self::RateLimited { .. } | Self::Timeout(_) | Self::Server { .. })
     }
 
     /// Get the retry-after duration if this is a rate limit error.
@@ -149,10 +137,7 @@ impl ToolError {
     /// Create a validation error.
     #[must_use]
     pub fn validation(field: impl Into<String>, message: impl Into<String>) -> Self {
-        Self::Validation {
-            field: field.into(),
-            message: message.into(),
-        }
+        Self::Validation { field: field.into(), message: message.into() }
     }
 
     /// Create an internal error.

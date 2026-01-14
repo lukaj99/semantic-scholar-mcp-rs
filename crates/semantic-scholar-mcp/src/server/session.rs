@@ -8,13 +8,13 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use axum::http::HeaderValue;
 use axum::response::sse::Event;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 
 /// A type-safe session identifier.
 ///
@@ -90,12 +90,7 @@ pub struct BufferedEvent {
 impl BufferedEvent {
     /// Create a new buffered event.
     pub fn new(id: u64, event_type: impl Into<String>, data: impl Into<String>) -> Self {
-        Self {
-            id,
-            event_type: event_type.into(),
-            data: data.into(),
-            created_at: Instant::now(),
-        }
+        Self { id, event_type: event_type.into(), data: data.into(), created_at: Instant::now() }
     }
 
     /// Convert to an Axum SSE Event.
@@ -165,11 +160,7 @@ impl Session {
     /// Get events after a given ID (for replay on reconnection).
     pub async fn get_events_after(&self, last_event_id: u64) -> Vec<BufferedEvent> {
         let history = self.history.read().await;
-        history
-            .iter()
-            .filter(|e| e.id > last_event_id)
-            .cloned()
-            .collect()
+        history.iter().filter(|e| e.id > last_event_id).cloned().collect()
     }
 
     /// Subscribe to live events.
@@ -222,9 +213,7 @@ impl SessionManager {
     /// Create a new session manager.
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            sessions: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self { sessions: Arc::new(RwLock::new(HashMap::new())) }
     }
 
     /// Create a new session and return it.

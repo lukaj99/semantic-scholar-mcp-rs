@@ -4,7 +4,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{ExportFormat, PearlGrowingStrategy, ResponseFormat, SearchDirection, TrendGranularity};
+use super::{
+    ExportFormat, PearlGrowingStrategy, ResponseFormat, SearchDirection, TrendGranularity,
+};
 
 /// Input for exhaustive paper search.
 #[derive(Debug, Clone, Serialize, Deserialize)]

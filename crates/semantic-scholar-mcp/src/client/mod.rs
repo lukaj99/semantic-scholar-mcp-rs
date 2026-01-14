@@ -13,11 +13,13 @@ use std::time::Duration;
 use moka::future::Cache;
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 
-use crate::config::{api, Config};
+use crate::config::{Config, api};
 use crate::error::{ClientError, ClientResult};
-use crate::models::{Author, AuthorSearchResult, BulkSearchResult, Paper, SearchResult, SnippetSearchResult};
+use crate::models::{
+    Author, AuthorSearchResult, BulkSearchResult, Paper, SearchResult, SnippetSearchResult,
+};
 
 /// Semantic Scholar API client.
 #[derive(Clone)]
@@ -54,9 +56,7 @@ impl SemanticScholarClient {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
             reqwest::header::CONTENT_TYPE,
-            "application/json"
-                .parse()
-                .expect("valid content-type header"),
+            "application/json".parse().expect("valid content-type header"),
         );
 
         if let Some(ref key) = config.api_key {
@@ -255,10 +255,7 @@ impl SemanticScholarClient {
         fields: &[&str],
     ) -> ClientResult<Vec<Paper>> {
         let url = if positive_ids.len() == 1 {
-            format!(
-                "{}/papers/forpaper/{}",
-                self.recommendations_api_url, positive_ids[0]
-            )
+            format!("{}/papers/forpaper/{}", self.recommendations_api_url, positive_ids[0])
         } else {
             format!("{}/papers/", self.recommendations_api_url)
         };
@@ -411,9 +408,11 @@ impl SemanticScholarClient {
         paper_id: &str,
     ) -> ClientResult<Vec<crate::models::Author>> {
         let url = format!("{}/paper/{}/authors", self.graph_api_url, paper_id);
-        let params = vec![
-            ("fields".to_string(), "authorId,name,affiliations,homepage,paperCount,citationCount,hIndex,externalIds".to_string()),
-        ];
+        let params = vec![(
+            "fields".to_string(),
+            "authorId,name,affiliations,homepage,paperCount,citationCount,hIndex,externalIds"
+                .to_string(),
+        )];
 
         #[derive(serde::Deserialize)]
         struct AuthorsResponse {
@@ -434,9 +433,11 @@ impl SemanticScholarClient {
         author_ids: &[String],
     ) -> ClientResult<Vec<crate::models::Author>> {
         let url = format!("{}/author/batch", self.graph_api_url);
-        let params = vec![
-            ("fields".to_string(), "authorId,name,affiliations,homepage,paperCount,citationCount,hIndex,externalIds".to_string()),
-        ];
+        let params = vec![(
+            "fields".to_string(),
+            "authorId,name,affiliations,homepage,paperCount,citationCount,hIndex,externalIds"
+                .to_string(),
+        )];
 
         let body = serde_json::json!({
             "ids": author_ids
@@ -461,12 +462,7 @@ impl SemanticScholarClient {
         // Rate limit
         tokio::time::sleep(self.rate_limit_delay).await;
 
-        let response = self
-            .client
-            .get(url)
-            .query(params)
-            .send()
-            .await?;
+        let response = self.client.get(url).query(params).send().await?;
 
         let response = self.handle_response(response).await?;
         let value: serde_json::Value = response.json().await?;
@@ -543,10 +539,7 @@ impl SemanticScholarClient {
             }
             _ => {
                 let text = response.text().await.unwrap_or_default();
-                Err(ClientError::UnexpectedStatus {
-                    status: status.as_u16(),
-                    message: text,
-                })
+                Err(ClientError::UnexpectedStatus { status: status.as_u16(), message: text })
             }
         }
     }
@@ -574,8 +567,6 @@ impl SemanticScholarClient {
 
 impl std::fmt::Debug for SemanticScholarClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SemanticScholarClient")
-            .field("has_api_key", &self.has_api_key())
-            .finish()
+        f.debug_struct("SemanticScholarClient").field("has_api_key", &self.has_api_key()).finish()
     }
 }

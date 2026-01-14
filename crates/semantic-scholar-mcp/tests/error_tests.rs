@@ -103,10 +103,7 @@ fn test_timeout_zero() {
 
 #[test]
 fn test_unexpected_status_construction() {
-    let err = ClientError::UnexpectedStatus {
-        status: 418,
-        message: "I'm a teapot".to_string(),
-    };
+    let err = ClientError::UnexpectedStatus { status: 418, message: "I'm a teapot".to_string() };
     assert!(err.to_string().contains("418"));
     assert!(err.to_string().contains("teapot"));
 }
@@ -152,10 +149,7 @@ fn test_not_retryable_bad_request() {
 
 #[test]
 fn test_not_retryable_unexpected_status() {
-    let err = ClientError::UnexpectedStatus {
-        status: 418,
-        message: "teapot".to_string(),
-    };
+    let err = ClientError::UnexpectedStatus { status: 418, message: "teapot".to_string() };
     assert!(!err.is_retryable());
 }
 
@@ -174,10 +168,7 @@ fn test_retry_after_not_rate_limited() {
     assert_eq!(ClientError::not_found("x").retry_after(), None);
     assert_eq!(ClientError::bad_request("x").retry_after(), None);
     assert_eq!(ClientError::server(500, "x").retry_after(), None);
-    assert_eq!(
-        ClientError::Timeout(Duration::from_secs(30)).retry_after(),
-        None
-    );
+    assert_eq!(ClientError::Timeout(Duration::from_secs(30)).retry_after(), None);
 }
 
 // =============================================================================

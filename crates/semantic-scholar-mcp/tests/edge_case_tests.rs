@@ -65,7 +65,10 @@ fn test_reference_export_tool_input_schema() {
     let tool = ReferenceExportTool;
     let schema = tool.input_schema();
     assert!(schema.get("properties").is_some());
-    assert!(schema["properties"]["paper_ids"].is_object() || schema["properties"]["paperIds"].is_object());
+    assert!(
+        schema["properties"]["paper_ids"].is_object()
+            || schema["properties"]["paperIds"].is_object()
+    );
 }
 
 // =============================================================================
@@ -78,9 +81,12 @@ async fn test_exhaustive_search_with_embeddings() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper("emb1", "Embeddings Paper", 2023, 100),
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![sample_paper(
+            "emb1",
+            "Embeddings Paper",
+            2023,
+            100,
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -88,10 +94,13 @@ async fn test_exhaustive_search_with_embeddings() {
     let tool = ExhaustiveSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "neural networks",
-            "includeEmbeddings": true
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "neural networks",
+                "includeEmbeddings": true
+            }),
+        )
         .await
         .unwrap();
 
@@ -104,9 +113,12 @@ async fn test_exhaustive_search_unlimited_results() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper("u1", "Unlimited Paper", 2023, 50),
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![sample_paper(
+            "u1",
+            "Unlimited Paper",
+            2023,
+            50,
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -115,10 +127,13 @@ async fn test_exhaustive_search_unlimited_results() {
 
     // -1 means unlimited
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "maxResults": -1
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "maxResults": -1
+            }),
+        )
         .await
         .unwrap();
 
@@ -142,10 +157,13 @@ async fn test_exhaustive_search_year_end_filter() {
     let tool = ExhaustiveSearchTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "test",
-            "yearEnd": 2020
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "test",
+                "yearEnd": 2020
+            }),
+        )
         .await
         .unwrap();
 
@@ -163,9 +181,12 @@ async fn test_research_trends_single_year() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper("s1", "Single Year", 2023, 100),
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![sample_paper(
+            "s1",
+            "Single Year",
+            2023,
+            100,
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -173,11 +194,14 @@ async fn test_research_trends_single_year() {
     let tool = ResearchTrendsTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "AI",
-            "yearStart": 2023,
-            "yearEnd": 2023
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "AI",
+                "yearStart": 2023,
+                "yearEnd": 2023
+            }),
+        )
         .await
         .unwrap();
 

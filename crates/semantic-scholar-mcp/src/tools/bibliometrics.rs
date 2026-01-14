@@ -95,7 +95,8 @@ impl McpTool for FieldWeightedImpactTool {
                 let key = (field.clone(), year);
                 if !baselines.contains_key(&key) {
                     // Estimate baseline from search
-                    let baseline = get_field_baseline(ctx, field, year, params.baseline_sample_size).await;
+                    let baseline =
+                        get_field_baseline(ctx, field, year, params.baseline_sample_size).await;
                     baselines.insert(key.clone(), baseline);
                 }
                 field_baselines.push(*baselines.get(&key).unwrap_or(&1.0));
@@ -107,11 +108,7 @@ impl McpTool for FieldWeightedImpactTool {
                 field_baselines.iter().sum::<f64>() / field_baselines.len() as f64
             };
 
-            let fwci = if avg_baseline > 0.0 {
-                citations as f64 / avg_baseline
-            } else {
-                0.0
-            };
+            let fwci = if avg_baseline > 0.0 { citations as f64 / avg_baseline } else { 0.0 };
 
             results.push(json!({
                 "paperId": paper.paper_id,
@@ -134,7 +131,10 @@ impl McpTool for FieldWeightedImpactTool {
 
                 for r in &results {
                     if r.get("fwci").and_then(|v| v.as_f64()).is_some() {
-                        output.push_str(&format!("### {}\n", r["title"].as_str().unwrap_or("Unknown")));
+                        output.push_str(&format!(
+                            "### {}\n",
+                            r["title"].as_str().unwrap_or("Unknown")
+                        ));
                         output.push_str(&format!(
                             "- **FWCI:** {} ({})\n",
                             r["fwci"],
@@ -161,21 +161,12 @@ async fn get_field_baseline(ctx: &ToolContext, _field: &str, year: i32, sample_s
     // Search for papers in this field-year to estimate baseline
     let result = ctx
         .client
-        .search_papers(
-            &format!("year:{}", year),
-            0,
-            sample_size,
-            &["citationCount"],
-        )
+        .search_papers(&format!("year:{}", year), 0, sample_size, &["citationCount"])
         .await;
 
     match result {
         Ok(search_result) => {
-            let citations: Vec<i32> = search_result
-                .data
-                .iter()
-                .map(|p| p.citations())
-                .collect();
+            let citations: Vec<i32> = search_result.data.iter().map(|p| p.citations()).collect();
             if citations.is_empty() {
                 1.0
             } else {
@@ -250,7 +241,8 @@ impl McpTool for HighlyCitedPapersTool {
             let citations = paper.citations();
             let year = paper.year;
             let paper_fields = paper.fields_of_study.clone().unwrap_or_default();
-            let primary_field = paper_fields.first().cloned().unwrap_or_else(|| "Unknown".to_string());
+            let primary_field =
+                paper_fields.first().cloned().unwrap_or_else(|| "Unknown".to_string());
 
             let Some(year) = year else {
                 continue;
@@ -259,7 +251,13 @@ impl McpTool for HighlyCitedPapersTool {
             let key = (primary_field.clone(), year);
             if !thresholds.contains_key(&key) {
                 // Estimate threshold from search
-                let threshold = get_percentile_threshold(ctx, &primary_field, year, params.percentile_threshold).await;
+                let threshold = get_percentile_threshold(
+                    ctx,
+                    &primary_field,
+                    year,
+                    params.percentile_threshold,
+                )
+                .await;
                 thresholds.insert(key.clone(), threshold);
             }
 
@@ -277,7 +275,8 @@ impl McpTool for HighlyCitedPapersTool {
             }));
         }
 
-        let highly_count = results.iter().filter(|r| r["is_highly_cited"].as_bool().unwrap_or(false)).count();
+        let highly_count =
+            results.iter().filter(|r| r["is_highly_cited"].as_bool().unwrap_or(false)).count();
 
         match params.response_format {
             ResponseFormat::Markdown => {
@@ -314,16 +313,14 @@ impl McpTool for HighlyCitedPapersTool {
     }
 }
 
-async fn get_percentile_threshold(ctx: &ToolContext, _field: &str, year: i32, percentile: f64) -> i32 {
-    let result = ctx
-        .client
-        .search_papers(
-            &format!("year:{}", year),
-            0,
-            500,
-            &["citationCount"],
-        )
-        .await;
+async fn get_percentile_threshold(
+    ctx: &ToolContext,
+    _field: &str,
+    year: i32,
+    percentile: f64,
+) -> i32 {
+    let result =
+        ctx.client.search_papers(&format!("year:{}", year), 0, 500, &["citationCount"]).await;
 
     match result {
         Ok(search_result) => {
@@ -381,13 +378,14 @@ impl McpTool for CitationHalfLifeTool {
             .await
             .map_err(ToolError::from)?;
 
-        let paper = papers.into_iter().next().ok_or_else(|| {
-            ToolError::validation("paperId", "Paper not found")
-        })?;
+        let paper = papers
+            .into_iter()
+            .next()
+            .ok_or_else(|| ToolError::validation("paperId", "Paper not found"))?;
 
-        let pub_year = paper.year.ok_or_else(|| {
-            ToolError::validation("paper", "Paper has no publication year")
-        })?;
+        let pub_year = paper
+            .year
+            .ok_or_else(|| ToolError::validation("paper", "Paper has no publication year"))?;
 
         // Get citations
         let citations = ctx
@@ -539,9 +537,10 @@ impl McpTool for CocitationAnalysisTool {
             .await
             .map_err(ToolError::from)?;
 
-        let focal_paper = papers.into_iter().next().ok_or_else(|| {
-            ToolError::validation("paperId", "Focal paper not found")
-        })?;
+        let focal_paper = papers
+            .into_iter()
+            .next()
+            .ok_or_else(|| ToolError::validation("paperId", "Focal paper not found"))?;
 
         // Get citing papers
         let citations = ctx
@@ -556,10 +555,8 @@ impl McpTool for CocitationAnalysisTool {
         for citation in &citations.data {
             if let Some(ref citing_paper) = citation.paper {
                 // Get references of this citing paper
-                if let Ok(refs) = ctx
-                    .client
-                    .get_references(&citing_paper.paper_id, 0, 100, &["paperId"])
-                    .await
+                if let Ok(refs) =
+                    ctx.client.get_references(&citing_paper.paper_id, 0, 100, &["paperId"]).await
                 {
                     for ref_paper in refs.data {
                         if let Some(cited) = ref_paper.paper {
@@ -588,7 +585,11 @@ impl McpTool for CocitationAnalysisTool {
             if let Ok(details) = ctx.client.get_papers_batch(&top_ids, fields::DEFAULT).await {
                 let focal_cites = focal_paper.citations().max(1);
                 for paper in details {
-                    let count = filtered.iter().find(|(id, _)| *id == paper.paper_id).map(|(_, c)| *c).unwrap_or(0);
+                    let count = filtered
+                        .iter()
+                        .find(|(id, _)| *id == paper.paper_id)
+                        .map(|(_, c)| *c)
+                        .unwrap_or(0);
                     let paper_cites = paper.citations().max(1);
                     let strength = count as f64 / ((focal_cites * paper_cites) as f64).sqrt();
 
@@ -618,8 +619,7 @@ impl McpTool for CocitationAnalysisTool {
                 for item in &cocited_papers {
                     output.push_str(&format!(
                         "**Co-citations: {}** (strength: {})\n",
-                        item["cocitation_count"],
-                        item["cocitation_strength"]
+                        item["cocitation_count"], item["cocitation_strength"]
                     ));
                     if let Some(p) = item["paper"].as_object() {
                         output.push_str(&format!(
@@ -698,9 +698,10 @@ impl McpTool for BibliographicCouplingTool {
             .await
             .map_err(ToolError::from)?;
 
-        let focal_paper = papers.into_iter().next().ok_or_else(|| {
-            ToolError::validation("paperId", "Focal paper not found")
-        })?;
+        let focal_paper = papers
+            .into_iter()
+            .next()
+            .ok_or_else(|| ToolError::validation("paperId", "Focal paper not found"))?;
 
         // Get references of focal paper
         let focal_refs = ctx
@@ -750,7 +751,11 @@ impl McpTool for BibliographicCouplingTool {
             if let Ok(details) = ctx.client.get_papers_batch(&top_ids, fields::DEFAULT).await {
                 let focal_ref_count = focal_ref_ids.len() as f64;
                 for paper in details {
-                    let shared = filtered.iter().find(|(id, _)| *id == paper.paper_id).map(|(_, c)| *c).unwrap_or(0);
+                    let shared = filtered
+                        .iter()
+                        .find(|(id, _)| *id == paper.paper_id)
+                        .map(|(_, c)| *c)
+                        .unwrap_or(0);
                     let paper_ref_count = paper.reference_count.unwrap_or(1).max(1) as f64;
                     let strength = shared as f64 / (focal_ref_count * paper_ref_count).sqrt();
 
@@ -780,8 +785,7 @@ impl McpTool for BibliographicCouplingTool {
                 for item in &coupled_papers {
                     output.push_str(&format!(
                         "**Shared refs: {}** (strength: {})\n",
-                        item["shared_references"],
-                        item["coupling_strength"]
+                        item["shared_references"], item["coupling_strength"]
                     ));
                     if let Some(p) = item["paper"].as_object() {
                         output.push_str(&format!(
@@ -949,10 +953,7 @@ impl McpTool for HotPapersTool {
                             p.get("year").and_then(|y| y.as_i64()).unwrap_or(0)
                         ));
                     }
-                    output.push_str(&format!(
-                        "**Velocity:** {:.2} citations/year\n\n",
-                        velocity
-                    ));
+                    output.push_str(&format!("**Velocity:** {:.2} citations/year\n\n", velocity));
                 }
 
                 Ok(output)

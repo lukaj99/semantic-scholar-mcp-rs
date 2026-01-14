@@ -156,31 +156,18 @@ fn test_paper_authors_without_names() {
 
 #[test]
 fn test_paper_first_author_none() {
-    let paper = Paper {
-        paper_id: "p1".to_string(),
-        authors: vec![],
-        ..Default::default()
-    };
+    let paper = Paper { paper_id: "p1".to_string(), authors: vec![], ..Default::default() };
     assert_eq!(paper.first_author(), None);
 }
 
 #[test]
 fn test_paper_has_citations() {
-    let paper_with = Paper {
-        paper_id: "p1".to_string(),
-        citation_count: Some(10),
-        ..Default::default()
-    };
-    let paper_zero = Paper {
-        paper_id: "p2".to_string(),
-        citation_count: Some(0),
-        ..Default::default()
-    };
-    let paper_none = Paper {
-        paper_id: "p3".to_string(),
-        citation_count: None,
-        ..Default::default()
-    };
+    let paper_with =
+        Paper { paper_id: "p1".to_string(), citation_count: Some(10), ..Default::default() };
+    let paper_zero =
+        Paper { paper_id: "p2".to_string(), citation_count: Some(0), ..Default::default() };
+    let paper_none =
+        Paper { paper_id: "p3".to_string(), citation_count: None, ..Default::default() };
 
     assert!(paper_with.has_citations());
     assert!(!paper_zero.has_citations());
@@ -527,10 +514,7 @@ fn test_search_result_with_complex_papers() {
 
 #[test]
 fn test_paper_serialize_minimal() {
-    let paper = Paper {
-        paper_id: "abc123".to_string(),
-        ..Default::default()
-    };
+    let paper = Paper { paper_id: "abc123".to_string(), ..Default::default() };
     let json = serde_json::to_string(&paper).unwrap();
     assert!(json.contains("paperId"));
 }
@@ -558,13 +542,8 @@ fn test_author_serialize_roundtrip() {
 
 #[test]
 fn test_search_result_serialize() {
-    let result = SearchResult {
-        total: 100,
-        offset: 0,
-        next: Some(10),
-        data: vec![],
-        message: None,
-    };
+    let result =
+        SearchResult { total: 100, offset: 0, next: Some(10), data: vec![], message: None };
 
     let json = serde_json::to_string(&result).unwrap();
     assert!(json.contains("total"));

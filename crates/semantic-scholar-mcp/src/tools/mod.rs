@@ -57,11 +57,7 @@ pub trait McpTool: Send + Sync {
     fn input_schema(&self) -> serde_json::Value;
 
     /// Execute the tool with given input.
-    async fn execute(
-        &self,
-        ctx: &ToolContext,
-        input: serde_json::Value,
-    ) -> ToolResult<String>;
+    async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String>;
 }
 
 /// Register all tools.
@@ -74,7 +70,6 @@ pub fn register_all_tools() -> Vec<Box<dyn McpTool>> {
         Box::new(discovery::CitationSnowballTool),
         Box::new(discovery::BulkBooleanSearchTool),
         Box::new(discovery::SnippetSearchTool),
-
         // Enrichment tools (7)
         Box::new(enrichment::BatchMetadataTool),
         Box::new(enrichment::AuthorSearchTool),
@@ -83,26 +78,20 @@ pub fn register_all_tools() -> Vec<Box<dyn McpTool>> {
         Box::new(enrichment::PaperTitleMatchTool),
         Box::new(enrichment::PaperAuthorsTool),
         Box::new(enrichment::AuthorBatchTool),
-
         // Export tools (1)
         Box::new(export::ReferenceExportTool),
-
         // Systematic review tools (3)
         Box::new(systematic::PrismaSearchTool),
         Box::new(systematic::ScreeningExportTool),
         Box::new(systematic::PrismaFlowDiagramTool),
-
         // Semantic tools (2)
         Box::new(semantic::SemanticSearchTool),
         Box::new(semantic::LiteratureReviewPipelineTool),
-
         // Network tools (1)
         Box::new(networks::AuthorNetworkTool),
-
         // Trend tools (2)
         Box::new(trends::ResearchTrendsTool),
         Box::new(trends::VenueAnalyticsTool),
-
         // Bibliometrics tools (6)
         Box::new(bibliometrics::FieldWeightedImpactTool),
         Box::new(bibliometrics::HighlyCitedPapersTool),
@@ -110,7 +99,6 @@ pub fn register_all_tools() -> Vec<Box<dyn McpTool>> {
         Box::new(bibliometrics::CocitationAnalysisTool),
         Box::new(bibliometrics::BibliographicCouplingTool),
         Box::new(bibliometrics::HotPapersTool),
-
         // Advanced tools (2)
         Box::new(advanced::PearlGrowingTool),
         Box::new(advanced::OrcidAuthorLookupTool),

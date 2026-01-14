@@ -46,13 +46,7 @@ pub mod api {
 /// Paper field sets for API requests.
 pub mod fields {
     /// Minimal fields for compact responses (token-efficient).
-    pub const MINIMAL: &[&str] = &[
-        "paperId",
-        "title",
-        "year",
-        "citationCount",
-        "authors",
-    ];
+    pub const MINIMAL: &[&str] = &["paperId", "title", "year", "citationCount", "authors"];
 
     /// Default fields for most use cases.
     pub const DEFAULT: &[&str] = &[
@@ -89,15 +83,8 @@ pub mod fields {
     ];
 
     /// Author fields for author queries.
-    pub const AUTHOR: &[&str] = &[
-        "authorId",
-        "name",
-        "affiliations",
-        "homepage",
-        "paperCount",
-        "citationCount",
-        "hIndex",
-    ];
+    pub const AUTHOR: &[&str] =
+        &["authorId", "name", "affiliations", "homepage", "paperCount", "citationCount", "hIndex"];
 }
 
 /// Server configuration.

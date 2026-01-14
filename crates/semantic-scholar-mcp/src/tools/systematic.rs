@@ -221,9 +221,8 @@ impl McpTool for ScreeningExportTool {
     async fn execute(&self, ctx: &ToolContext, input: serde_json::Value) -> ToolResult<String> {
         let params: ScreeningExportInput = serde_json::from_value(input)?;
 
-        let mut field_list = vec![
-            "paperId", "title", "year", "citationCount", "authors", "venue", "externalIds",
-        ];
+        let mut field_list =
+            vec!["paperId", "title", "year", "citationCount", "authors", "venue", "externalIds"];
         if params.include_abstract {
             field_list.push("abstract");
         }
@@ -240,12 +239,8 @@ impl McpTool for ScreeningExportTool {
         let mut export_data = Vec::new();
 
         for paper in papers {
-            let authors: Vec<_> = paper
-                .authors
-                .iter()
-                .take(5)
-                .map(|a| a.name_or_default().to_string())
-                .collect();
+            let authors: Vec<_> =
+                paper.authors.iter().take(5).map(|a| a.name_or_default().to_string()).collect();
             let mut author_str = authors.join("; ");
             if paper.authors.len() > 5 {
                 author_str.push_str(&format!(" et al. (+{})", paper.authors.len() - 5));

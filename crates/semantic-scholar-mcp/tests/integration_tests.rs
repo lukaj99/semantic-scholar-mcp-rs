@@ -7,7 +7,7 @@
 #![allow(dead_code)]
 
 use semantic_scholar_mcp::client::SemanticScholarClient;
-use semantic_scholar_mcp::config::{fields, Config};
+use semantic_scholar_mcp::config::{Config, fields};
 use std::sync::Arc;
 
 /// Well-known paper IDs for testing.
@@ -31,10 +31,8 @@ mod author_ids {
 }
 
 fn create_client() -> Arc<SemanticScholarClient> {
-    let config = Config {
-        api_key: std::env::var("SEMANTIC_SCHOLAR_API_KEY").ok(),
-        ..Config::default()
-    };
+    let config =
+        Config { api_key: std::env::var("SEMANTIC_SCHOLAR_API_KEY").ok(), ..Config::default() };
     Arc::new(SemanticScholarClient::new(config).expect("Failed to create client"))
 }
 
@@ -58,9 +56,7 @@ async fn test_search_papers_basic() {
 async fn test_search_papers_empty_query() {
     let client = create_client();
     // Very random query should return 0 or few results
-    let result = client
-        .search_papers("xyznonexistentquery12345", 0, 10, fields::DEFAULT)
-        .await;
+    let result = client.search_papers("xyznonexistentquery12345", 0, 10, fields::DEFAULT).await;
 
     // Either returns empty results or a parsing error is acceptable
     match result {
@@ -73,9 +69,7 @@ async fn test_search_papers_empty_query() {
 async fn test_search_papers_special_characters() {
     let client = create_client();
     // Query with special characters
-    let result = client
-        .search_papers("C++ memory management", 0, 10, fields::DEFAULT)
-        .await;
+    let result = client.search_papers("C++ memory management", 0, 10, fields::DEFAULT).await;
 
     // Might get rate limited or succeed
     match result {
@@ -91,19 +85,13 @@ async fn test_search_papers_special_characters() {
 #[tokio::test]
 async fn test_get_paper_by_id() {
     let client = create_client();
-    let result = client
-        .get_paper(paper_ids::ATTENTION, fields::EXTENDED)
-        .await;
+    let result = client.get_paper(paper_ids::ATTENTION, fields::EXTENDED).await;
 
     match result {
         Ok(paper) => {
             assert_eq!(paper.paper_id, paper_ids::ATTENTION);
             assert!(paper.title.is_some());
-            println!(
-                "Attention paper: year={:?}, citations={}",
-                paper.year,
-                paper.citations()
-            );
+            println!("Attention paper: year={:?}, citations={}", paper.year, paper.citations());
         }
         Err(e) => {
             // Rate limiting is acceptable for integration tests without API key
@@ -124,10 +112,8 @@ async fn test_get_paper_invalid_id() {
 async fn test_get_papers_batch() {
     let client = create_client();
     let ids = vec![paper_ids::ATTENTION.to_string(), paper_ids::BERT.to_string()];
-    let papers = client
-        .get_papers_batch(&ids, fields::DEFAULT)
-        .await
-        .expect("Batch should succeed");
+    let papers =
+        client.get_papers_batch(&ids, fields::DEFAULT).await.expect("Batch should succeed");
 
     assert_eq!(papers.len(), 2, "Should return both papers");
 }
@@ -200,10 +186,7 @@ async fn test_get_recommendations() {
 #[tokio::test]
 async fn test_get_recommendations_multiple_seeds() {
     let client = create_client();
-    let seeds = vec![
-        paper_ids::ATTENTION.to_string(),
-        paper_ids::BERT.to_string(),
-    ];
+    let seeds = vec![paper_ids::ATTENTION.to_string(), paper_ids::BERT.to_string()];
     let papers = client
         .get_recommendations(&seeds, None, 10, fields::DEFAULT)
         .await
@@ -219,10 +202,8 @@ async fn test_get_recommendations_multiple_seeds() {
 #[tokio::test]
 async fn test_search_authors() {
     let client = create_client();
-    let result = client
-        .search_authors("Geoffrey Hinton", 0, 5)
-        .await
-        .expect("Author search should succeed");
+    let result =
+        client.search_authors("Geoffrey Hinton", 0, 5).await.expect("Author search should succeed");
 
     assert!(!result.data.is_empty(), "Should find Geoffrey Hinton");
 }
@@ -230,10 +211,7 @@ async fn test_search_authors() {
 #[tokio::test]
 async fn test_get_author() {
     let client = create_client();
-    let author = client
-        .get_author(author_ids::HINTON)
-        .await
-        .expect("Should fetch Hinton");
+    let author = client.get_author(author_ids::HINTON).await.expect("Should fetch Hinton");
 
     assert_eq!(author.author_id, author_ids::HINTON);
     assert!(author.name.is_some());
@@ -249,9 +227,7 @@ async fn test_get_author() {
 async fn test_pagination_bounds() {
     let client = create_client();
     // Request with very high offset
-    let result = client
-        .search_papers("machine learning", 10000, 10, fields::DEFAULT)
-        .await;
+    let result = client.search_papers("machine learning", 10000, 10, fields::DEFAULT).await;
 
     // Should either succeed with empty results or return gracefully
     assert!(result.is_ok() || result.is_err(), "Should handle high offset");
@@ -261,18 +237,13 @@ async fn test_pagination_bounds() {
 async fn test_zero_citation_paper() {
     let client = create_client();
     // Search for a recent paper that might have 0 citations
-    let result = client
-        .search_papers("preprint 2024", 0, 100, fields::DEFAULT)
-        .await;
+    let result = client.search_papers("preprint 2024", 0, 100, fields::DEFAULT).await;
 
     match result {
         Ok(search_result) => {
             // Check that papers with 0 citations are handled
-            let zero_cite_papers: Vec<_> = search_result
-                .data
-                .iter()
-                .filter(|p| p.citations() == 0)
-                .collect();
+            let zero_cite_papers: Vec<_> =
+                search_result.data.iter().filter(|p| p.citations() == 0).collect();
             println!("Found {} papers with 0 citations", zero_cite_papers.len());
         }
         Err(e) => {

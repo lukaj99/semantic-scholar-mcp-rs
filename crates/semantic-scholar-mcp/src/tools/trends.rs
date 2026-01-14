@@ -107,11 +107,8 @@ impl McpTool for ResearchTrendsTool {
 
             let paper_count = year_papers.len();
             let total_citations: i32 = year_papers.iter().map(|p| p.citations()).sum();
-            let avg_citations = if paper_count > 0 {
-                total_citations as f64 / paper_count as f64
-            } else {
-                0.0
-            };
+            let avg_citations =
+                if paper_count > 0 { total_citations as f64 / paper_count as f64 } else { 0.0 };
 
             // Get top papers by citations
             let mut sorted_papers = year_papers.clone();
@@ -273,11 +270,8 @@ impl McpTool for VenueAnalyticsTool {
         // Calculate statistics
         let total_papers = all_papers.len();
         let total_citations: i32 = all_papers.iter().map(|p| p.citations()).sum();
-        let avg_citations = if total_papers > 0 {
-            total_citations as f64 / total_papers as f64
-        } else {
-            0.0
-        };
+        let avg_citations =
+            if total_papers > 0 { total_citations as f64 / total_papers as f64 } else { 0.0 };
 
         // Papers by year
         let mut years: HashMap<i32, i32> = HashMap::new();
@@ -313,7 +307,10 @@ impl McpTool for VenueAnalyticsTool {
                 if params.year_start.is_some() || params.year_end.is_some() {
                     output.push_str(&format!(
                         "**Period:** {} - {}\n",
-                        params.year_start.map(|y| y.to_string()).unwrap_or_else(|| "any".to_string()),
+                        params
+                            .year_start
+                            .map(|y| y.to_string())
+                            .unwrap_or_else(|| "any".to_string()),
                         params.year_end.map(|y| y.to_string()).unwrap_or_else(|| "any".to_string())
                     ));
                 }
@@ -324,9 +321,7 @@ impl McpTool for VenueAnalyticsTool {
                      - Total citations: {}\n\
                      - Avg citations: {:.1}\n\n\
                      ## Papers by Year\n",
-                    total_papers,
-                    total_citations,
-                    avg_citations
+                    total_papers, total_citations, avg_citations
                 ));
 
                 let mut year_list: Vec<_> = years.into_iter().collect();

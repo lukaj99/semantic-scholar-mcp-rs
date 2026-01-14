@@ -22,7 +22,13 @@ fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     ToolContext::new(Arc::new(client))
 }
 
-fn sample_paper(id: &str, title: &str, year: i32, citations: i32, fields: Vec<&str>) -> serde_json::Value {
+fn sample_paper(
+    id: &str,
+    title: &str,
+    year: i32,
+    citations: i32,
+    fields: Vec<&str>,
+) -> serde_json::Value {
     json!({
         "paperId": id,
         "title": title,
@@ -56,9 +62,13 @@ async fn test_fwci_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "High Impact Paper", 2022, 150, vec!["Computer Science"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "High Impact Paper",
+            2022,
+            150,
+            vec!["Computer Science"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -76,10 +86,8 @@ async fn test_fwci_json_format() {
     let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "responseFormat": "json"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperIds": ["p1"], "responseFormat": "json"})).await.unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert!(parsed.get("methodology_note").is_some());
@@ -110,10 +118,8 @@ async fn test_fwci_missing_year() {
     let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "responseFormat": "json"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperIds": ["p1"], "responseFormat": "json"})).await.unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert!(parsed["results"][0]["error"].is_string());
@@ -141,10 +147,7 @@ async fn test_fwci_missing_field() {
     let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"]}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperIds": ["p1"]})).await.unwrap();
 
     assert!(result.contains("Missing year or field data") || result.contains("FWCI"));
 }
@@ -159,9 +162,13 @@ async fn test_highly_cited_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "Very Popular", 2022, 500, vec!["Physics"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "Very Popular",
+            2022,
+            500,
+            vec!["Physics"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -177,10 +184,8 @@ async fn test_highly_cited_json_format() {
     let ctx = setup_test_context(&mock_server);
     let tool = HighlyCitedPapersTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "responseFormat": "json"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperIds": ["p1"], "responseFormat": "json"})).await.unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert!(parsed.get("percentile_threshold").is_some());
@@ -193,9 +198,13 @@ async fn test_highly_cited_custom_percentile() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "Mid-tier Paper", 2022, 75, vec!["Biology"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "Mid-tier Paper",
+            2022,
+            75,
+            vec!["Biology"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -212,10 +221,8 @@ async fn test_highly_cited_custom_percentile() {
     let ctx = setup_test_context(&mock_server);
     let tool = HighlyCitedPapersTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperIds": ["p1"], "percentile_threshold": 5.0}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperIds": ["p1"], "percentile_threshold": 5.0})).await.unwrap();
 
     assert!(result.contains("Highly Cited") || result.contains("Top"));
 }
@@ -230,9 +237,13 @@ async fn test_citation_half_life_basic() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "Classic Paper", 2015, 200, vec!["Mathematics"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "Classic Paper",
+            2015,
+            200,
+            vec!["Mathematics"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -254,10 +265,7 @@ async fn test_citation_half_life_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = CitationHalfLifeTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "p1"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperId": "p1"})).await.unwrap();
 
     assert!(result.contains("Half-life") || result.contains("half_life"));
     assert!(result.contains("Classic Paper"));
@@ -269,9 +277,13 @@ async fn test_citation_half_life_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "JSON Test Paper", 2018, 50, vec!["Chemistry"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "JSON Test Paper",
+            2018,
+            50,
+            vec!["Chemistry"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -290,10 +302,8 @@ async fn test_citation_half_life_json_format() {
     let ctx = setup_test_context(&mock_server);
     let tool = CitationHalfLifeTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "p1", "responseFormat": "json"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperId": "p1", "responseFormat": "json"})).await.unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert!(parsed.get("paperId").is_some());
@@ -306,9 +316,13 @@ async fn test_citation_half_life_no_citations() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("p1", "New Paper", 2024, 0, vec!["Physics"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "p1",
+            "New Paper",
+            2024,
+            0,
+            vec!["Physics"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -324,10 +338,7 @@ async fn test_citation_half_life_no_citations() {
     let ctx = setup_test_context(&mock_server);
     let tool = CitationHalfLifeTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "p1"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperId": "p1"})).await.unwrap();
 
     assert!(result.contains("N/A") || result.contains("null"));
 }
@@ -343,9 +354,13 @@ async fn test_cocitation_basic() {
     // Focal paper
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("focal", "Focal Paper", 2020, 100, vec!["CS"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "focal",
+            "Focal Paper",
+            2020,
+            100,
+            vec!["CS"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -390,10 +405,8 @@ async fn test_cocitation_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = CocitationAnalysisTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "focal", "minCocitations": 1}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperId": "focal", "minCocitations": 1})).await.unwrap();
 
     assert!(result.contains("Co-citation") || result.contains("cocitation"));
 }
@@ -404,9 +417,13 @@ async fn test_cocitation_json_format() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("focal", "Focal", 2020, 50, vec!["CS"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "focal",
+            "Focal",
+            2020,
+            50,
+            vec!["CS"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -422,10 +439,8 @@ async fn test_cocitation_json_format() {
     let ctx = setup_test_context(&mock_server);
     let tool = CocitationAnalysisTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "focal", "responseFormat": "json"}))
-        .await
-        .unwrap();
+    let result =
+        tool.execute(&ctx, json!({"paperId": "focal", "responseFormat": "json"})).await.unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert!(parsed.get("focal_paper").is_some());
@@ -442,9 +457,13 @@ async fn test_bibliographic_coupling_basic() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("focal", "Focal Paper", 2020, 50, vec!["CS"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "focal",
+            "Focal Paper",
+            2020,
+            50,
+            vec!["CS"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -488,12 +507,13 @@ async fn test_bibliographic_coupling_basic() {
     let ctx = setup_test_context(&mock_server);
     let tool = BibliographicCouplingTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "focal", "minSharedRefs": 1}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperId": "focal", "minSharedRefs": 1})).await.unwrap();
 
-    assert!(result.contains("Bibliographic") || result.contains("coupling") || result.contains("Shared"));
+    assert!(
+        result.contains("Bibliographic")
+            || result.contains("coupling")
+            || result.contains("Shared")
+    );
 }
 
 #[tokio::test]
@@ -502,9 +522,13 @@ async fn test_bibliographic_coupling_no_refs() {
 
     Mock::given(method("POST"))
         .and(path("/graph/v1/paper/batch"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-            sample_paper("focal", "No Refs Paper", 2020, 50, vec!["CS"])
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_paper(
+            "focal",
+            "No Refs Paper",
+            2020,
+            50,
+            vec!["CS"]
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -520,10 +544,7 @@ async fn test_bibliographic_coupling_no_refs() {
     let ctx = setup_test_context(&mock_server);
     let tool = BibliographicCouplingTool;
 
-    let result = tool
-        .execute(&ctx, json!({"paperId": "focal"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"paperId": "focal"})).await.unwrap();
 
     assert!(result.contains("error") || result.contains("No references"));
 }
@@ -564,9 +585,13 @@ async fn test_hot_papers_json_format() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
-            sample_paper("p1", "Trending", 2023, 150, vec!["ML"]),
-        ])))
+        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![sample_paper(
+            "p1",
+            "Trending",
+            2023,
+            150,
+            vec!["ML"],
+        )])))
         .mount(&mock_server)
         .await;
 
@@ -574,11 +599,14 @@ async fn test_hot_papers_json_format() {
     let tool = HotPapersTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "machine learning",
-            "responseFormat": "json",
-            "minRecentCitations": 5
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "machine learning",
+                "responseFormat": "json",
+                "minRecentCitations": 5
+            }),
+        )
         .await
         .unwrap();
 
@@ -604,11 +632,14 @@ async fn test_hot_papers_year_filter() {
     let tool = HotPapersTool;
 
     let result = tool
-        .execute(&ctx, json!({
-            "query": "biology",
-            "yearStart": 2023,
-            "minRecentCitations": 10
-        }))
+        .execute(
+            &ctx,
+            json!({
+                "query": "biology",
+                "yearStart": 2023,
+                "minRecentCitations": 10
+            }),
+        )
         .await
         .unwrap();
 
@@ -629,10 +660,7 @@ async fn test_hot_papers_empty_results() {
     let ctx = setup_test_context(&mock_server);
     let tool = HotPapersTool;
 
-    let result = tool
-        .execute(&ctx, json!({"query": "nonexistent topic xyz"}))
-        .await
-        .unwrap();
+    let result = tool.execute(&ctx, json!({"query": "nonexistent topic xyz"})).await.unwrap();
 
     assert!(result.contains('0') || result.contains("Hot Papers"));
 }
