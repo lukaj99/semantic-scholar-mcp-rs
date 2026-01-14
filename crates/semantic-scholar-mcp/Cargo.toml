@@ -1,0 +1,56 @@
+[package]
+name = "semantic-scholar-mcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MCP server for Semantic Scholar API - systematic reviews and bibliometrics"
+keywords = ["mcp", "semantic-scholar", "academic", "research", "citations"]
+categories = ["command-line-utilities", "science"]
+
+[dependencies]
+tokio.workspace = true
+reqwest.workspace = true
+reqwest-middleware.workspace = true
+reqwest-retry.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tower.workspace = true
+governor.workspace = true
+moka.workspace = true
+axum.workspace = true
+axum-extra.workspace = true
+tower-http.workspace = true
+futures.workspace = true
+async-stream.workspace = true
+pin-project-lite.workspace = true
+tokio-stream.workspace = true
+async-trait.workspace = true
+md-5.workspace = true
+url.workspace = true
+chrono.workspace = true
+regex.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tokio-test.workspace = true
+wiremock.workspace = true
+insta.workspace = true
+criterion.workspace = true
+
+[features]
+default = []
+integration = []
+
+[[bin]]
+name = "semantic-scholar-mcp"
+path = "src/main.rs"
+
+[lints]
+workspace = true

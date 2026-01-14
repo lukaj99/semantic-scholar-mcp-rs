@@ -1,15 +1,15 @@
-[package]
-name = "semantic-scholar-mcp"
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92"
 license = "MIT"
-description = "MCP server for Semantic Scholar API - systematic reviews and bibliometrics"
 repository = "https://github.com/luka/semantic-scholar-mcp-rs"
-keywords = ["mcp", "semantic-scholar", "academic", "research", "citations"]
-categories = ["command-line-utilities", "science"]
 
-[dependencies]
+[workspace.dependencies]
 # Async runtime
 tokio = { version = "1.43", features = ["full"] }
 
@@ -45,9 +45,6 @@ governor = "0.8"
 # Caching
 moka = { version = "0.12", features = ["future"] }
 
-# MCP Protocol
-# rmcp = { version = "0.1", features = ["server", "transport-io"] }  # Temporarily disabled
-
 # HTTP Server
 axum = { version = "0.8", features = ["json"] }
 axum-extra = { version = "0.10", features = ["typed-header"] }
@@ -58,8 +55,6 @@ futures = "0.3"
 async-stream = "0.3"
 pin-project-lite = "0.2"
 tokio-stream = { version = "0.1", features = ["sync"] }
-
-# Async trait
 async-trait = "0.1"
 
 # Utilities
@@ -69,31 +64,26 @@ chrono = { version = "0.4", features = ["serde"] }
 regex = "1"
 uuid = { version = "1", features = ["v4"] }
 
-[dev-dependencies]
+# Dev dependencies
 tokio-test = "0.4"
 wiremock = "0.6"
 insta = { version = "1", features = ["json"] }
 criterion = { version = "0.8", features = ["async_tokio"] }
 
-[features]
-default = []
-integration = []  # Real API tests
+[workspace.lints.rust]
+unsafe_code = "forbid"
 
-[[bin]]
-name = "semantic-scholar-mcp"
-path = "src/main.rs"
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+nursery = "warn"
+cargo = "warn"
+# Explicit allows (justified)
+missing_errors_doc = "allow"        # MCP tools have uniform error handling
+module_name_repetitions = "allow"   # SemanticScholarClient is intentionally clear
 
 [profile.release]
 lto = true
 codegen-units = 1
 strip = true
 panic = "abort"
-
-[lints.rust]
-unsafe_code = "forbid"
-
-[lints.clippy]
-all = "warn"
-pedantic = "warn"
-nursery = "warn"
-cargo = "warn"
