@@ -1,6 +1,7 @@
 //! Mock-based tool tests using wiremock.
 //!
 //! These tests verify actual tool behavior by mocking the Semantic Scholar API.
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -16,7 +17,7 @@ use semantic_scholar_mcp::tools::{
 };
 
 /// Create a test context with a mock server.
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -69,7 +70,7 @@ async fn test_exhaustive_search_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -98,7 +99,7 @@ async fn test_exhaustive_search_with_year_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     // Filter to only 2024
@@ -128,7 +129,7 @@ async fn test_exhaustive_search_with_citation_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -153,7 +154,7 @@ async fn test_exhaustive_search_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -193,7 +194,7 @@ async fn test_exhaustive_search_pagination() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -223,7 +224,7 @@ async fn test_exhaustive_search_max_results_limit() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -254,7 +255,7 @@ async fn test_recommendations_single_seed() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
     let result = tool
@@ -280,7 +281,7 @@ async fn test_recommendations_multiple_seeds() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
     let result = tool
@@ -305,7 +306,7 @@ async fn test_recommendations_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
     let result = tool
@@ -337,7 +338,7 @@ async fn test_batch_metadata_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -364,7 +365,7 @@ async fn test_batch_metadata_with_nulls() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -412,7 +413,7 @@ async fn test_author_search_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
     let result = tool
@@ -438,7 +439,7 @@ async fn test_exhaustive_search_api_error() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool.execute(&ctx, json!({"query": "test"})).await;
@@ -459,7 +460,7 @@ async fn test_exhaustive_search_rate_limited() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool.execute(&ctx, json!({"query": "test"})).await;
@@ -469,7 +470,7 @@ async fn test_exhaustive_search_rate_limited() {
 #[tokio::test]
 async fn test_exhaustive_search_invalid_input() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     // Missing required 'query' field

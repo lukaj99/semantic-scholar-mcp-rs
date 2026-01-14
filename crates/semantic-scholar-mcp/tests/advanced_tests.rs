@@ -1,4 +1,5 @@
-//! Mock-based tests for advanced tools: pearl_growing, orcid_author_lookup
+//! Mock-based tests for advanced tools: `pearl_growing`, `orcid_author_lookup`
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -10,7 +11,7 @@ use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{McpTool, OrcidAuthorLookupTool, PearlGrowingTool, ToolContext};
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -106,7 +107,7 @@ async fn test_pearl_growing_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
     let result = tool
@@ -144,7 +145,7 @@ async fn test_pearl_growing_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
     let result = tool
@@ -169,7 +170,7 @@ async fn test_pearl_growing_no_valid_seeds() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
     let result = tool
@@ -201,7 +202,7 @@ async fn test_pearl_growing_keywords_strategy() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
     let result = tool
@@ -237,7 +238,7 @@ async fn test_pearl_growing_authors_strategy() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
     let result = tool
@@ -274,7 +275,7 @@ async fn test_pearl_growing_citations_strategy() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
     let result = tool
@@ -318,7 +319,7 @@ async fn test_pearl_growing_multiple_iterations() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PearlGrowingTool;
 
     let result = tool
@@ -347,7 +348,7 @@ async fn test_orcid_lookup_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
@@ -368,7 +369,7 @@ async fn test_orcid_lookup_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
@@ -406,7 +407,7 @@ async fn test_orcid_lookup_with_papers() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
@@ -440,7 +441,7 @@ async fn test_orcid_lookup_with_papers_json() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
@@ -466,7 +467,7 @@ async fn test_orcid_lookup_not_found() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
     let result = tool
@@ -493,7 +494,7 @@ async fn test_orcid_lookup_affiliations() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = OrcidAuthorLookupTool;
 
     let result = tool

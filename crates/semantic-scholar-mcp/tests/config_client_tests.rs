@@ -62,7 +62,7 @@ fn test_client_reports_api_key_status() {
 fn test_client_debug_hides_api_key() {
     let config = Config::new(Some("super-secret-key".to_string()));
     let client = SemanticScholarClient::new(config).unwrap();
-    let debug = format!("{:?}", client);
+    let debug = format!("{client:?}");
     // API key should NOT appear in debug output
     assert!(!debug.contains("super-secret-key"));
     assert!(debug.contains("has_api_key"));
@@ -72,6 +72,6 @@ fn test_client_debug_hides_api_key() {
 fn test_client_is_cloneable() {
     let config = Config::default();
     let client = SemanticScholarClient::new(config).unwrap();
-    let _cloned = client.clone();
+    let _cloned = client;
     // Should compile and work
 }

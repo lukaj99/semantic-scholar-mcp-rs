@@ -26,7 +26,7 @@ use semantic_scholar_mcp::tools::{
     FieldWeightedImpactTool, HighlyCitedPapersTool,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -73,7 +73,7 @@ async fn test_export_ris_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     let result = tool
@@ -100,7 +100,7 @@ async fn test_export_bibtex_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     let result = tool
@@ -126,7 +126,7 @@ async fn test_export_csv_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     let result = tool
@@ -153,7 +153,7 @@ async fn test_export_csv_without_abstract() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     let result = tool
@@ -182,7 +182,7 @@ async fn test_export_endnote_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     let result = tool
@@ -213,7 +213,7 @@ async fn test_export_missing_metadata() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     // Should not crash with missing fields
@@ -237,7 +237,7 @@ async fn test_export_multiple_papers() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     let result = tool
@@ -272,7 +272,7 @@ async fn test_prisma_search_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -298,7 +298,7 @@ async fn test_prisma_search_deduplication() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -334,7 +334,7 @@ async fn test_screening_export_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
     let result = tool
@@ -365,7 +365,7 @@ async fn test_screening_export_with_tldr() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
     let result = tool
@@ -424,7 +424,7 @@ async fn test_author_network_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool
@@ -458,7 +458,7 @@ async fn test_research_trends_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool
@@ -495,7 +495,7 @@ async fn test_venue_analytics_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
     let result = tool
@@ -525,7 +525,7 @@ async fn test_semantic_search_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
     let result = tool
@@ -551,7 +551,7 @@ async fn test_semantic_search_with_year_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
     let result = tool
@@ -607,7 +607,7 @@ async fn test_fwci_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
     let result = tool
@@ -663,12 +663,12 @@ async fn test_highly_cited_basic() {
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "total": 100,
             "offset": 0,
-            "data": (0..10).map(|i| sample_paper_minimal(&format!("b{}", i), &format!("Baseline {}", i), 2023, 50)).collect::<Vec<_>>()
+            "data": (0..10).map(|i| sample_paper_minimal(&format!("b{i}"), &format!("Baseline {i}"), 2023, 50)).collect::<Vec<_>>()
         })))
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = HighlyCitedPapersTool;
 
     let result = tool
@@ -694,7 +694,7 @@ async fn test_export_api_error() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     let result = tool.execute(&ctx, json!({"paperIds": ["p1"]})).await;
@@ -704,7 +704,7 @@ async fn test_export_api_error() {
 #[tokio::test]
 async fn test_export_invalid_format() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ReferenceExportTool;
 
     // Invalid format value
@@ -717,7 +717,7 @@ async fn test_export_invalid_format() {
 #[tokio::test]
 async fn test_trends_missing_required() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     // Missing required yearStart/yearEnd

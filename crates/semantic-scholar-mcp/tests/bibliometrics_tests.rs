@@ -1,6 +1,7 @@
 //! Comprehensive mock-based tests for bibliometrics tools.
 //!
-//! Tests: FWCI, highly_cited, citation_half_life, cocitation, bibliographic_coupling, hot_papers
+//! Tests: FWCI, `highly_cited`, `citation_half_life`, cocitation, `bibliographic_coupling`, `hot_papers`
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -15,7 +16,7 @@ use semantic_scholar_mcp::tools::{
     FieldWeightedImpactTool, HighlyCitedPapersTool, HotPapersTool, McpTool, ToolContext,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -72,7 +73,7 @@ async fn test_fwci_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
     let result = tool
@@ -106,7 +107,7 @@ async fn test_fwci_missing_year() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
     let result = tool
@@ -137,7 +138,7 @@ async fn test_fwci_missing_field() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
     let result = tool
@@ -173,7 +174,7 @@ async fn test_highly_cited_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = HighlyCitedPapersTool;
 
     let result = tool
@@ -208,7 +209,7 @@ async fn test_highly_cited_custom_percentile() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = HighlyCitedPapersTool;
 
     let result = tool
@@ -250,7 +251,7 @@ async fn test_citation_half_life_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationHalfLifeTool;
 
     let result = tool
@@ -286,7 +287,7 @@ async fn test_citation_half_life_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationHalfLifeTool;
 
     let result = tool
@@ -320,7 +321,7 @@ async fn test_citation_half_life_no_citations() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationHalfLifeTool;
 
     let result = tool
@@ -386,7 +387,7 @@ async fn test_cocitation_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CocitationAnalysisTool;
 
     let result = tool
@@ -418,7 +419,7 @@ async fn test_cocitation_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CocitationAnalysisTool;
 
     let result = tool
@@ -484,7 +485,7 @@ async fn test_bibliographic_coupling_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BibliographicCouplingTool;
 
     let result = tool
@@ -516,7 +517,7 @@ async fn test_bibliographic_coupling_no_refs() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BibliographicCouplingTool;
 
     let result = tool
@@ -545,7 +546,7 @@ async fn test_hot_papers_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = HotPapersTool;
 
     let result = tool
@@ -569,7 +570,7 @@ async fn test_hot_papers_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = HotPapersTool;
 
     let result = tool
@@ -599,7 +600,7 @@ async fn test_hot_papers_year_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = HotPapersTool;
 
     let result = tool
@@ -625,7 +626,7 @@ async fn test_hot_papers_empty_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = HotPapersTool;
 
     let result = tool
@@ -633,7 +634,7 @@ async fn test_hot_papers_empty_results() {
         .await
         .unwrap();
 
-    assert!(result.contains("0") || result.contains("Hot Papers"));
+    assert!(result.contains('0') || result.contains("Hot Papers"));
 }
 
 // =============================================================================
@@ -650,7 +651,7 @@ async fn test_fwci_api_error() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = FieldWeightedImpactTool;
 
     let result = tool.execute(&ctx, json!({"paperIds": ["p1"]})).await;
@@ -667,7 +668,7 @@ async fn test_citation_half_life_paper_not_found() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationHalfLifeTool;
 
     let result = tool.execute(&ctx, json!({"paperId": "nonexistent"})).await;
@@ -684,7 +685,7 @@ async fn test_cocitation_paper_not_found() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CocitationAnalysisTool;
 
     let result = tool.execute(&ctx, json!({"paperId": "nonexistent"})).await;

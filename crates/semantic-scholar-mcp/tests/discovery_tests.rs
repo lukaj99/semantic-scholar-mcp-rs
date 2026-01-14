@@ -1,4 +1,5 @@
-//! Mock-based tests for discovery tools: exhaustive_search, recommendations, citation_snowball, bulk_boolean_search, snippet_search
+//! Mock-based tests for discovery tools: `exhaustive_search`, recommendations, `citation_snowball`, `bulk_boolean_search`, `snippet_search`
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -13,7 +14,7 @@ use semantic_scholar_mcp::tools::{
     RecommendationsTool, SnippetSearchTool, ToolContext,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -73,7 +74,7 @@ async fn test_citation_snowball_forward() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     let result = tool
@@ -113,7 +114,7 @@ async fn test_citation_snowball_backward() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     let result = tool
@@ -158,7 +159,7 @@ async fn test_citation_snowball_both_directions() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     let result = tool
@@ -203,7 +204,7 @@ async fn test_citation_snowball_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     let result = tool
@@ -250,7 +251,7 @@ async fn test_citation_snowball_depth_2() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     let result = tool
@@ -290,7 +291,7 @@ async fn test_citation_snowball_deduplication() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     let result = tool
@@ -329,7 +330,7 @@ async fn test_citation_snowball_min_citations_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     let result = tool
@@ -365,7 +366,7 @@ async fn test_exhaustive_search_fields_of_study_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -392,7 +393,7 @@ async fn test_exhaustive_search_open_access_only() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -424,7 +425,7 @@ async fn test_recommendations_with_negative_seeds() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
     let result = tool
@@ -453,7 +454,7 @@ async fn test_recommendations_with_limit() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
     let result = tool
@@ -481,7 +482,7 @@ async fn test_recommendations_fields_of_study_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = RecommendationsTool;
 
     let result = tool
@@ -585,7 +586,7 @@ async fn test_bulk_boolean_search_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BulkBooleanSearchTool;
 
     let result = tool
@@ -611,7 +612,7 @@ async fn test_bulk_boolean_search_with_filters() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BulkBooleanSearchTool;
 
     let result = tool
@@ -641,7 +642,7 @@ async fn test_bulk_boolean_search_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BulkBooleanSearchTool;
 
     let result = tool
@@ -673,7 +674,7 @@ async fn test_bulk_boolean_search_pagination() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BulkBooleanSearchTool;
 
     // Should handle pagination internally (though wiremock will only return first page)
@@ -701,7 +702,7 @@ async fn test_bulk_boolean_search_with_sort() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BulkBooleanSearchTool;
 
     let result = tool
@@ -776,7 +777,7 @@ async fn test_snippet_search_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SnippetSearchTool;
 
     let result = tool
@@ -801,7 +802,7 @@ async fn test_snippet_search_with_filters() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SnippetSearchTool;
 
     let result = tool
@@ -830,7 +831,7 @@ async fn test_snippet_search_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SnippetSearchTool;
 
     let result = tool
@@ -857,7 +858,7 @@ async fn test_snippet_search_with_limit() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SnippetSearchTool;
 
     let result = tool
@@ -881,7 +882,7 @@ async fn test_snippet_search_empty_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SnippetSearchTool;
 
     let result = tool
@@ -891,7 +892,7 @@ async fn test_snippet_search_empty_results() {
         .await
         .unwrap();
 
-    assert!(result.contains("0") || result.contains("no") || result.contains("Snippet"));
+    assert!(result.contains('0') || result.contains("no") || result.contains("Snippet"));
 }
 
 #[test]

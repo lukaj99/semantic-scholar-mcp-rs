@@ -14,7 +14,7 @@ use semantic_scholar_mcp::tools::{
     BatchMetadataTool, CitationSnowballTool, ExhaustiveSearchTool, McpTool, ToolContext,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -48,7 +48,7 @@ async fn test_api_rate_limit_429() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -77,7 +77,7 @@ async fn test_api_server_error_500() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -100,7 +100,7 @@ async fn test_api_bad_request_400() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -127,7 +127,7 @@ async fn test_malformed_json_response() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -152,7 +152,7 @@ async fn test_html_error_page_response() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -177,7 +177,7 @@ async fn test_batch_with_null_entries() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -230,7 +230,7 @@ async fn test_citation_graph_cycle() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = CitationSnowballTool;
 
     // depth=2 should handle the cycle without infinite loop
@@ -282,7 +282,7 @@ async fn test_exhaustive_search_pagination() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool

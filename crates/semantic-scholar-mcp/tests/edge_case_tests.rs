@@ -1,4 +1,5 @@
 //! Edge case tests to cover remaining code paths.
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ use semantic_scholar_mcp::tools::{
     ExhaustiveSearchTool, McpTool, ReferenceExportTool, ResearchTrendsTool, ToolContext,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -83,7 +84,7 @@ async fn test_exhaustive_search_with_embeddings() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -109,7 +110,7 @@ async fn test_exhaustive_search_unlimited_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     // -1 means unlimited
@@ -137,7 +138,7 @@ async fn test_exhaustive_search_year_end_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ExhaustiveSearchTool;
 
     let result = tool
@@ -168,7 +169,7 @@ async fn test_research_trends_single_year() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool

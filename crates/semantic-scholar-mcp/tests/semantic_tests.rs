@@ -1,4 +1,5 @@
-//! Mock-based tests for semantic tools: semantic_search, literature_review_pipeline
+//! Mock-based tests for semantic tools: `semantic_search`, `literature_review_pipeline`
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ use semantic_scholar_mcp::tools::{
     LiteratureReviewPipelineTool, McpTool, SemanticSearchTool, ToolContext,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -61,7 +62,7 @@ async fn test_semantic_search_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
     let result = tool
@@ -87,7 +88,7 @@ async fn test_semantic_search_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
     let result = tool
@@ -119,7 +120,7 @@ async fn test_semantic_search_year_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
     let result = tool
@@ -147,7 +148,7 @@ async fn test_semantic_search_empty_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
     let result = tool
@@ -155,7 +156,7 @@ async fn test_semantic_search_empty_results() {
         .await
         .unwrap();
 
-    assert!(result.contains("No similar") || result.contains("0") || result.contains("found"));
+    assert!(result.contains("No similar") || result.contains('0') || result.contains("found"));
 }
 
 #[tokio::test]
@@ -173,7 +174,7 @@ async fn test_semantic_search_with_limit() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = SemanticSearchTool;
 
     let result = tool
@@ -257,7 +258,7 @@ async fn test_literature_review_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
@@ -301,7 +302,7 @@ async fn test_literature_review_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
@@ -354,7 +355,7 @@ async fn test_literature_review_with_filters() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
@@ -383,7 +384,7 @@ async fn test_literature_review_no_recommendations() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
@@ -435,7 +436,7 @@ async fn test_literature_review_deduplication() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool
@@ -508,7 +509,7 @@ async fn test_literature_review_max_papers() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = LiteratureReviewPipelineTool;
 
     let result = tool

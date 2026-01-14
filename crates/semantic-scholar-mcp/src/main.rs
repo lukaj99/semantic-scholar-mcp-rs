@@ -24,7 +24,7 @@ struct Cli {
     #[arg(long, default_value = "8000", env = "PORT")]
     port: u16,
 
-    /// Base URL for SSE endpoint announcements (e.g., https://scholar.jovanovic.org.uk)
+    /// Base URL for SSE endpoint announcements (e.g., <https://scholar.jovanovic.org.uk>)
     #[arg(long, env = "BASE_URL")]
     base_url: Option<String>,
 

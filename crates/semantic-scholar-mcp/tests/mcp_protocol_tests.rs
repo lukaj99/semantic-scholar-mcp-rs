@@ -57,7 +57,7 @@ fn test_jsonrpc_notification() {
 // Tool Schema Validation Tests
 // =============================================================================
 
-/// Test exhaustive_search input schema
+/// Test `exhaustive_search` input schema
 #[test]
 fn test_exhaustive_search_schema() {
     let schema = json!({
@@ -95,7 +95,7 @@ fn test_recommendations_schema() {
     assert!(required.contains(&json!("positivePaperIds")));
 }
 
-/// Test citation_snowball input schema
+/// Test `citation_snowball` input schema
 #[test]
 fn test_citation_snowball_schema() {
     let schema = json!({
@@ -176,7 +176,7 @@ fn test_markdown_response() {
     });
 
     let text = response["result"]["content"][0]["text"].as_str().unwrap();
-    assert!(text.starts_with("#"), "Markdown should start with heading");
+    assert!(text.starts_with('#'), "Markdown should start with heading");
 }
 
 /// Test JSON response format
@@ -267,8 +267,7 @@ fn test_tool_names_valid() {
         // Tool names should be snake_case identifiers
         assert!(
             name.chars().all(|c| c.is_ascii_lowercase() || c == '_'),
-            "Tool name '{}' should be snake_case",
-            name
+            "Tool name '{name}' should be snake_case"
         );
     }
 }

@@ -1,5 +1,5 @@
-//! Mock-based tests for enrichment tools: batch_metadata, author_search, author_papers,
-//! paper_autocomplete, paper_title_match, paper_authors, author_batch
+//! Mock-based tests for enrichment tools: `batch_metadata`, `author_search`, `author_papers`,
+//! `paper_autocomplete`, `paper_title_match`, `paper_authors`, `author_batch`
 
 use std::sync::Arc;
 
@@ -14,7 +14,7 @@ use semantic_scholar_mcp::tools::{
     PaperAutocompleteTool, PaperAuthorsTool, PaperTitleMatchTool, ToolContext,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -63,7 +63,7 @@ async fn test_batch_metadata_markdown_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -87,7 +87,7 @@ async fn test_batch_metadata_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -114,7 +114,7 @@ async fn test_batch_metadata_custom_fields() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -138,7 +138,7 @@ async fn test_batch_metadata_empty_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool
@@ -160,7 +160,7 @@ async fn test_batch_metadata_api_error() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = BatchMetadataTool;
 
     let result = tool.execute(&ctx, json!({"paperIds": ["p1"]})).await;
@@ -187,7 +187,7 @@ async fn test_author_search_markdown_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
     let result = tool
@@ -211,7 +211,7 @@ async fn test_author_search_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
     let result = tool
@@ -239,7 +239,7 @@ async fn test_author_search_with_limit() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
     let result = tool
@@ -250,7 +250,7 @@ async fn test_author_search_with_limit() {
         .await
         .unwrap();
 
-    assert!(result.contains("Limited") || result.len() > 0);
+    assert!(result.contains("Limited") || !result.is_empty());
 }
 
 #[tokio::test]
@@ -266,7 +266,7 @@ async fn test_author_search_no_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorSearchTool;
 
     let result = tool
@@ -294,7 +294,7 @@ async fn test_author_papers_markdown_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorPapersTool;
 
     let result = tool
@@ -317,7 +317,7 @@ async fn test_author_papers_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorPapersTool;
 
     let result = tool
@@ -342,7 +342,7 @@ async fn test_author_papers_not_found() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorPapersTool;
 
     let result = tool.execute(&ctx, json!({"authorId": "invalid"})).await;
@@ -361,7 +361,7 @@ async fn test_author_papers_with_year_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorPapersTool;
 
     let result = tool
@@ -459,7 +459,7 @@ async fn test_paper_autocomplete_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperAutocompleteTool;
 
     let result = tool
@@ -482,7 +482,7 @@ async fn test_paper_autocomplete_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperAutocompleteTool;
 
     let result = tool
@@ -509,7 +509,7 @@ async fn test_paper_autocomplete_empty() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperAutocompleteTool;
 
     let result = tool
@@ -556,7 +556,7 @@ async fn test_paper_title_match_found() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperTitleMatchTool;
 
     let result = tool
@@ -577,7 +577,7 @@ async fn test_paper_title_match_not_found() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperTitleMatchTool;
 
     let result = tool
@@ -600,7 +600,7 @@ async fn test_paper_title_match_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperTitleMatchTool;
 
     let result = tool
@@ -654,7 +654,7 @@ async fn test_paper_authors_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperAuthorsTool;
 
     let result = tool
@@ -677,7 +677,7 @@ async fn test_paper_authors_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PaperAuthorsTool;
 
     let result = tool
@@ -729,7 +729,7 @@ async fn test_author_batch_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorBatchTool;
 
     let result = tool
@@ -752,7 +752,7 @@ async fn test_author_batch_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorBatchTool;
 
     let result = tool
@@ -782,7 +782,7 @@ async fn test_author_batch_partial_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorBatchTool;
 
     let result = tool

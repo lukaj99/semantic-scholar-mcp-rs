@@ -257,28 +257,28 @@ fn test_user_message_internal() {
 #[test]
 fn test_client_error_display_rate_limited() {
     let err = ClientError::rate_limited(60);
-    let display = format!("{}", err);
+    let display = format!("{err}");
     assert!(display.contains("Rate limited"));
 }
 
 #[test]
 fn test_client_error_display_not_found() {
     let err = ClientError::not_found("resource");
-    let display = format!("{}", err);
+    let display = format!("{err}");
     assert!(display.contains("not found"));
 }
 
 #[test]
 fn test_client_error_display_bad_request() {
     let err = ClientError::bad_request("invalid");
-    let display = format!("{}", err);
+    let display = format!("{err}");
     assert!(display.contains("Bad request"));
 }
 
 #[test]
 fn test_client_error_display_server() {
     let err = ClientError::server(500, "error");
-    let display = format!("{}", err);
+    let display = format!("{err}");
     assert!(display.contains("Server error"));
 }
 
@@ -286,14 +286,14 @@ fn test_client_error_display_server() {
 fn test_tool_error_display_client() {
     let client_err = ClientError::not_found("paper");
     let tool_err = ToolError::Client(client_err);
-    let display = format!("{}", tool_err);
+    let display = format!("{tool_err}");
     assert!(display.contains("API error"));
 }
 
 #[test]
 fn test_tool_error_display_validation() {
     let err = ToolError::validation("field", "message");
-    let display = format!("{}", err);
+    let display = format!("{err}");
     assert!(display.contains("Validation error"));
 }
 
@@ -304,14 +304,14 @@ fn test_tool_error_display_validation() {
 #[test]
 fn test_client_error_debug() {
     let err = ClientError::rate_limited(60);
-    let debug = format!("{:?}", err);
+    let debug = format!("{err:?}");
     assert!(debug.contains("RateLimited"));
 }
 
 #[test]
 fn test_tool_error_debug() {
     let err = ToolError::internal("test");
-    let debug = format!("{:?}", err);
+    let debug = format!("{err:?}");
     assert!(debug.contains("Internal"));
 }
 

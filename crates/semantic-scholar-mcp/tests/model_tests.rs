@@ -213,7 +213,7 @@ fn test_pearl_growing_strategies() {
     // Test all strategies deserialize correctly
     let strategies = ["keywords", "authors", "citations", "all"];
     for strat in strategies {
-        let json = format!(r#"{{"seedPaperIds": ["p1"], "strategy": "{}"}}"#, strat);
+        let json = format!(r#"{{"seedPaperIds": ["p1"], "strategy": "{strat}"}}"#);
         let input: PearlGrowingInput = serde_json::from_str(&json).unwrap();
         assert!(!input.seed_paper_ids.is_empty());
     }
@@ -223,7 +223,7 @@ fn test_pearl_growing_strategies() {
 fn test_export_formats() {
     let formats = ["ris", "bibtex", "csv", "endnote"];
     for fmt in formats {
-        let json = format!(r#"{{"paperIds": ["p1"], "format": "{}"}}"#, fmt);
+        let json = format!(r#"{{"paperIds": ["p1"], "format": "{fmt}"}}"#);
         let input: ReferenceExportInput = serde_json::from_str(&json).unwrap();
         assert!(!input.paper_ids.is_empty());
     }
@@ -257,7 +257,7 @@ fn test_paper_with_empty_strings() {
     let paper: Paper = serde_json::from_str(json).unwrap();
 
     // Empty string is different from None
-    assert_eq!(paper.title, Some("".to_string()));
+    assert_eq!(paper.title, Some(String::new()));
     // title_or_default should return the empty string, not "Untitled"
     // Actually let's check the implementation...
 }

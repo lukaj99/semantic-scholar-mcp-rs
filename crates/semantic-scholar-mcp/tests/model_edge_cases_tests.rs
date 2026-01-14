@@ -87,7 +87,7 @@ fn test_paper_empty_strings() {
     let paper: Paper = serde_json::from_str(json).unwrap();
     assert_eq!(paper.paper_id, "");
     assert_eq!(paper.title_or_default(), ""); // empty string, not Untitled
-    assert!(paper.venue.as_ref().map(|s| s.is_empty()).unwrap_or(false));
+    assert!(paper.venue.as_ref().is_some_and(std::string::String::is_empty));
 }
 
 #[test]
@@ -347,7 +347,7 @@ fn test_author_unicode_name() {
 
 #[test]
 fn test_author_ref_minimal() {
-    let json = r#"{}"#;
+    let json = r"{}";
     let author: AuthorRef = serde_json::from_str(json).unwrap();
     assert_eq!(author.id(), "");
     assert_eq!(author.name_or_default(), "Unknown");
@@ -428,7 +428,7 @@ fn test_response_format_serialize_roundtrip() {
 #[test]
 fn test_search_direction_all_values() {
     for direction in ["citations", "references", "both"] {
-        let json = format!("\"{}\"", direction);
+        let json = format!("\"{direction}\"");
         let _: SearchDirection = serde_json::from_str(&json).unwrap();
     }
 }
@@ -462,7 +462,7 @@ fn test_export_format_mime_types() {
 #[test]
 fn test_trend_granularity_values() {
     for granularity in ["year", "quarter"] {
-        let json = format!("\"{}\"", granularity);
+        let json = format!("\"{granularity}\"");
         let _: TrendGranularity = serde_json::from_str(&json).unwrap();
     }
 }
@@ -470,7 +470,7 @@ fn test_trend_granularity_values() {
 #[test]
 fn test_pearl_growing_strategy_values() {
     for strategy in ["keywords", "authors", "citations", "all"] {
-        let json = format!("\"{}\"", strategy);
+        let json = format!("\"{strategy}\"");
         let _: PearlGrowingStrategy = serde_json::from_str(&json).unwrap();
     }
 }

@@ -1,4 +1,5 @@
-//! Mock-based tests for networks tools: author_network
+//! Mock-based tests for networks tools: `author_network`
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -10,7 +11,7 @@ use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{AuthorNetworkTool, McpTool, ToolContext};
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -84,7 +85,7 @@ async fn test_author_network_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool
@@ -116,7 +117,7 @@ async fn test_author_network_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool
@@ -162,7 +163,7 @@ async fn test_author_network_min_shared_papers() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool
@@ -202,7 +203,7 @@ async fn test_author_network_max_collaborators() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool
@@ -238,7 +239,7 @@ async fn test_author_network_no_collaborators() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool
@@ -246,7 +247,7 @@ async fn test_author_network_no_collaborators() {
         .await
         .unwrap();
 
-    assert!(result.contains("No collaborators") || result.contains("0") || result.contains("Solo"));
+    assert!(result.contains("No collaborators") || result.contains('0') || result.contains("Solo"));
 }
 
 #[tokio::test]
@@ -265,7 +266,7 @@ async fn test_author_network_no_papers() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool
@@ -273,7 +274,7 @@ async fn test_author_network_no_papers() {
         .await
         .unwrap();
 
-    assert!(result.contains("0") || result.contains("No collaborators") || result.contains("Collaboration"));
+    assert!(result.contains('0') || result.contains("No collaborators") || result.contains("Collaboration"));
 }
 
 #[tokio::test]
@@ -286,7 +287,7 @@ async fn test_author_network_not_found() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool.execute(&ctx, json!({"authorId": "invalid"})).await;
@@ -320,7 +321,7 @@ async fn test_author_network_pagination() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = AuthorNetworkTool;
 
     let result = tool

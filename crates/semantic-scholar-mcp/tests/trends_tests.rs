@@ -1,4 +1,5 @@
-//! Mock-based tests for trends tools: research_trends, venue_analytics
+//! Mock-based tests for trends tools: `research_trends`, `venue_analytics`
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -10,7 +11,7 @@ use semantic_scholar_mcp::client::SemanticScholarClient;
 use semantic_scholar_mcp::config::Config;
 use semantic_scholar_mcp::tools::{McpTool, ResearchTrendsTool, ToolContext, VenueAnalyticsTool};
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -59,7 +60,7 @@ async fn test_research_trends_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool
@@ -86,7 +87,7 @@ async fn test_research_trends_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool
@@ -115,7 +116,7 @@ async fn test_research_trends_quarterly_granularity() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool
@@ -128,7 +129,7 @@ async fn test_research_trends_quarterly_granularity() {
         .await
         .unwrap();
 
-    assert!(result.contains("Q") || result.contains("quarter") || result.contains("Trend"));
+    assert!(result.contains('Q') || result.contains("quarter") || result.contains("Trend"));
 }
 
 #[tokio::test]
@@ -141,7 +142,7 @@ async fn test_research_trends_no_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool
@@ -154,7 +155,7 @@ async fn test_research_trends_no_results() {
         .unwrap();
 
     // Should handle empty gracefully
-    assert!(result.contains("0") || result.contains("Trend") || result.len() > 0);
+    assert!(result.contains('0') || result.contains("Trend") || !result.is_empty());
 }
 
 #[tokio::test]
@@ -170,7 +171,7 @@ async fn test_research_trends_wide_range() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool
@@ -198,7 +199,7 @@ async fn test_research_trends_max_papers_per_period() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ResearchTrendsTool;
 
     let result = tool
@@ -245,7 +246,7 @@ async fn test_venue_analytics_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
     let result = tool
@@ -275,7 +276,7 @@ async fn test_venue_analytics_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
     let result = tool
@@ -309,7 +310,7 @@ async fn test_venue_analytics_with_year_range() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
     let result = tool
@@ -351,7 +352,7 @@ async fn test_venue_analytics_max_papers() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
     let result = tool
@@ -375,7 +376,7 @@ async fn test_venue_analytics_empty_results() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
     let result = tool
@@ -383,7 +384,7 @@ async fn test_venue_analytics_empty_results() {
         .await
         .unwrap();
 
-    assert!(result.contains("0") || result.contains("Venue") || result.len() > 0);
+    assert!(result.contains('0') || result.contains("Venue") || !result.is_empty());
 }
 
 #[tokio::test]
@@ -400,7 +401,7 @@ async fn test_venue_analytics_statistics() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = VenueAnalyticsTool;
 
     let result = tool

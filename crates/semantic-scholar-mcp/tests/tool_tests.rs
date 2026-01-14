@@ -1,6 +1,7 @@
 //! Unit tests for tool implementations.
 //!
 //! Tests edge cases and business logic without hitting the API.
+#![allow(clippy::float_cmp)]
 
 use semantic_scholar_mcp::models::*;
 
@@ -50,7 +51,7 @@ fn test_fwci_zero_baseline_handling() {
     let avg_baseline = 0.0;
 
     let fwci = if avg_baseline > 0.0 {
-        citations as f64 / avg_baseline
+        f64::from(citations) / avg_baseline
     } else {
         0.0 // Should default to 0, not panic or inf
     };
@@ -65,7 +66,7 @@ fn test_fwci_small_baseline() {
     let avg_baseline = 0.01;
 
     let fwci = if avg_baseline > 0.0 {
-        citations as f64 / avg_baseline
+        f64::from(citations) / avg_baseline
     } else {
         0.0
     };
@@ -107,7 +108,7 @@ fn test_velocity_high_citations() {
     let citations = 1_000_000;
     let years_since_pub = 1;
 
-    let velocity = citations as f64 / years_since_pub as f64;
+    let velocity = f64::from(citations) / f64::from(years_since_pub);
 
     assert!(velocity.is_finite(), "Velocity should be finite");
     assert_eq!(velocity, 1_000_000.0, "Velocity should be correct");
@@ -125,13 +126,13 @@ fn test_half_life_empty_ages() {
     let half_life = if ages.is_empty() {
         None
     } else {
-        let mut sorted = ages.clone();
-        sorted.sort();
+        let mut sorted = ages;
+        sorted.sort_unstable();
         let mid = sorted.len() / 2;
-        Some(if sorted.len() % 2 == 0 {
-            (sorted[mid - 1] + sorted[mid]) as f64 / 2.0
+        Some(if sorted.len().is_multiple_of(2) {
+            f64::from(sorted[mid - 1] + sorted[mid]) / 2.0
         } else {
-            sorted[mid] as f64
+            f64::from(sorted[mid])
         })
     };
 
@@ -143,13 +144,13 @@ fn test_half_life_empty_ages() {
 fn test_half_life_single_age() {
     let ages = vec![5];
 
-    let mut sorted = ages.clone();
-    sorted.sort();
+    let mut sorted = ages;
+    sorted.sort_unstable();
     let mid = sorted.len() / 2;
-    let half_life = if sorted.len() % 2 == 0 {
-        (sorted[mid - 1] + sorted[mid]) as f64 / 2.0
+    let half_life = if sorted.len().is_multiple_of(2) {
+        f64::from(sorted[mid - 1] + sorted[mid]) / 2.0
     } else {
-        sorted[mid] as f64
+        f64::from(sorted[mid])
     };
 
     assert_eq!(half_life, 5.0, "Single element median should be that element");
@@ -160,10 +161,10 @@ fn test_half_life_single_age() {
 fn test_half_life_even_count() {
     let ages = vec![2, 4, 6, 8];
 
-    let mut sorted = ages.clone();
-    sorted.sort();
+    let mut sorted = ages;
+    sorted.sort_unstable();
     let mid = sorted.len() / 2;
-    let half_life = (sorted[mid - 1] + sorted[mid]) as f64 / 2.0;
+    let half_life = f64::from(sorted[mid - 1] + sorted[mid]) / 2.0;
 
     assert_eq!(half_life, 5.0, "Even count median should be average of middle two");
 }
@@ -172,7 +173,7 @@ fn test_half_life_even_count() {
 // Input Validation Edge Cases
 // =============================================================================
 
-/// Test empty paper_ids in batch requests
+/// Test empty `paper_ids` in batch requests
 #[test]
 fn test_batch_empty_ids() {
     let json = r#"{"paperIds": []}"#;
@@ -190,7 +191,7 @@ fn test_large_limit_values() {
     let input: ExhaustiveSearchInput = serde_json::from_str(json).unwrap();
 
     // Should accept large values (server-side will enforce limits)
-    assert_eq!(input.max_results, 999999);
+    assert_eq!(input.max_results, 999_999);
 }
 
 /// Test negative year values
@@ -211,9 +212,9 @@ fn test_negative_year() {
 #[test]
 fn test_search_directions() {
     for direction in ["citations", "references", "both"] {
-        let json = format!(r#"{{"seedPaperIds": ["p1"], "direction": "{}"}}"#, direction);
+        let json = format!(r#"{{"seedPaperIds": ["p1"], "direction": "{direction}"}}"#);
         let result: Result<CitationSnowballInput, _> = serde_json::from_str(&json);
-        assert!(result.is_ok(), "Direction '{}' should parse", direction);
+        assert!(result.is_ok(), "Direction '{direction}' should parse");
     }
 }
 
@@ -260,7 +261,7 @@ fn test_paper_negative_citations() {
 #[test]
 fn test_paper_long_title() {
     let long_title = "A".repeat(10000);
-    let json = format!(r#"{{"paperId": "long", "title": "{}"}}"#, long_title);
+    let json = format!(r#"{{"paperId": "long", "title": "{long_title}"}}"#);
     let paper: Paper = serde_json::from_str(&json).unwrap();
 
     assert_eq!(paper.title_or_default().len(), 10000);

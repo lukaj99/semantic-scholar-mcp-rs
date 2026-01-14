@@ -147,7 +147,7 @@ fn test_snowball_minimal() {
 #[test]
 fn test_snowball_all_directions() {
     for direction in ["citations", "references", "both"] {
-        let json = format!(r#"{{"seedPaperIds": ["p1"], "direction": "{}"}}"#, direction);
+        let json = format!(r#"{{"seedPaperIds": ["p1"], "direction": "{direction}"}}"#);
         let input: CitationSnowballInput = serde_json::from_str(&json).unwrap();
         // Direction should parse
         assert!(!input.seed_paper_ids.is_empty());
@@ -224,7 +224,7 @@ fn test_batch_empty_ids() {
 
 #[test]
 fn test_batch_large_count() {
-    let ids: Vec<String> = (0..500).map(|i| format!("id{}", i)).collect();
+    let ids: Vec<String> = (0..500).map(|i| format!("id{i}")).collect();
     let json = serde_json::json!({"paperIds": ids}).to_string();
     let input: BatchMetadataInput = serde_json::from_str(&json).unwrap();
     assert_eq!(input.paper_ids.len(), 500);
@@ -336,7 +336,7 @@ fn test_reference_export_minimal() {
 #[test]
 fn test_reference_export_all_formats() {
     for format in ["ris", "bibtex", "csv", "endnote"] {
-        let json = format!(r#"{{"paperIds": ["p1"], "format": "{}"}}"#, format);
+        let json = format!(r#"{{"paperIds": ["p1"], "format": "{format}"}}"#);
         let input: ReferenceExportInput = serde_json::from_str(&json).unwrap();
         assert!(!input.paper_ids.is_empty());
     }
@@ -510,7 +510,7 @@ fn test_pearl_growing_minimal() {
 #[test]
 fn test_pearl_growing_all_strategies() {
     for strategy in ["keywords", "authors", "citations", "all"] {
-        let json = format!(r#"{{"seedPaperIds": ["p1"], "strategy": "{}"}}"#, strategy);
+        let json = format!(r#"{{"seedPaperIds": ["p1"], "strategy": "{strategy}"}}"#);
         let input: PearlGrowingInput = serde_json::from_str(&json).unwrap();
         assert!(!input.seed_paper_ids.is_empty());
     }
@@ -644,7 +644,7 @@ fn test_orcid_various_formats() {
         "0000-0001-5109-3700",
         "0000-0002-1694-233X", // X checksum
     ] {
-        let json = format!(r#"{{"orcid": "{}"}}"#, orcid);
+        let json = format!(r#"{{"orcid": "{orcid}"}}"#);
         let input: OrcidAuthorLookupInput = serde_json::from_str(&json).unwrap();
         assert_eq!(input.orcid, orcid);
     }

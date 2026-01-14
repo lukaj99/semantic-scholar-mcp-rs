@@ -1,4 +1,5 @@
-//! Mock-based tests for systematic review tools: prisma_search, screening_export, prisma_flow_diagram
+//! Mock-based tests for systematic review tools: `prisma_search`, `screening_export`, `prisma_flow_diagram`
+#![allow(clippy::needless_pass_by_value)]
 
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ use semantic_scholar_mcp::tools::{
     McpTool, PrismaFlowDiagramTool, PrismaSearchTool, ScreeningExportTool, ToolContext,
 };
 
-async fn setup_test_context(mock_server: &MockServer) -> ToolContext {
+fn setup_test_context(mock_server: &MockServer) -> ToolContext {
     let config = Config::for_testing(&mock_server.uri());
     let client = SemanticScholarClient::new(config).unwrap();
     ToolContext::new(Arc::new(client))
@@ -62,7 +63,7 @@ async fn test_prisma_search_single_query() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -87,7 +88,7 @@ async fn test_prisma_search_multiple_queries() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -113,7 +114,7 @@ async fn test_prisma_search_json_format() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -144,7 +145,7 @@ async fn test_prisma_search_with_year_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -176,7 +177,7 @@ async fn test_prisma_search_with_citation_filter() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -204,7 +205,7 @@ async fn test_prisma_search_deduplication_across_queries() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaSearchTool;
 
     let result = tool
@@ -235,7 +236,7 @@ async fn test_screening_export_basic() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
     let result = tool
@@ -259,7 +260,7 @@ async fn test_screening_export_with_abstract() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
     let result = tool
@@ -293,7 +294,7 @@ async fn test_screening_export_with_tldr() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
     let result = tool
@@ -318,7 +319,7 @@ async fn test_screening_export_empty_papers() {
         .mount(&mock_server)
         .await;
 
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = ScreeningExportTool;
 
     let result = tool
@@ -337,7 +338,7 @@ async fn test_screening_export_empty_papers() {
 #[tokio::test]
 async fn test_prisma_flow_diagram_basic() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
@@ -363,7 +364,7 @@ async fn test_prisma_flow_diagram_basic() {
 #[tokio::test]
 async fn test_prisma_flow_diagram_json_format() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
@@ -388,7 +389,7 @@ async fn test_prisma_flow_diagram_json_format() {
 #[tokio::test]
 async fn test_prisma_flow_diagram_with_eligibility() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
@@ -416,7 +417,7 @@ async fn test_prisma_flow_diagram_with_eligibility() {
 #[tokio::test]
 async fn test_prisma_flow_diagram_with_included() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
@@ -443,7 +444,7 @@ async fn test_prisma_flow_diagram_with_included() {
 #[tokio::test]
 async fn test_prisma_flow_diagram_full() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
@@ -494,7 +495,7 @@ async fn test_prisma_flow_diagram_full() {
 #[tokio::test]
 async fn test_prisma_flow_diagram_with_other_sources() {
     let mock_server = MockServer::start().await;
-    let ctx = setup_test_context(&mock_server).await;
+    let ctx = setup_test_context(&mock_server);
     let tool = PrismaFlowDiagramTool;
 
     let result = tool
