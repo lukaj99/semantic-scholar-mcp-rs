@@ -69,6 +69,7 @@ tokio-test = "0.4"
 wiremock = "0.6"
 insta = { version = "1", features = ["json"] }
 criterion = { version = "0.8", features = ["async_tokio"] }
+proptest = "1.5"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
