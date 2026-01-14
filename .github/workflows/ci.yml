@@ -4,6 +4,9 @@ on:
   push:
     branches: [master, main]
   pull_request:
+  schedule:
+    - cron: '0 3 * * *'  # Run at 3 AM UTC daily
+  workflow_dispatch:      # Allow manual triggering
 
 env:
   CARGO_TERM_COLOR: always
@@ -73,3 +76,26 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --workspace --release
+
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-latest
+    # Only run on schedule (nightly) or when explicitly triggered
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+      - name: Run fuzz_paper_parse
+        run: |
+          cd crates/sentinel-fuzz
+          cargo +nightly fuzz run fuzz_paper_parse -- -max_total_time=120
+      - name: Run fuzz_input_parse
+        run: |
+          cd crates/sentinel-fuzz
+          cargo +nightly fuzz run fuzz_input_parse -- -max_total_time=120
+      - name: Run fuzz_json_object
+        run: |
+          cd crates/sentinel-fuzz
+          cargo +nightly fuzz run fuzz_json_object -- -max_total_time=60
