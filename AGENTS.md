@@ -108,6 +108,7 @@ The HTTP transport implements robust "mailbox" pattern for reliable connections:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/ready` | GET | Readiness with session count |
+| `/.well-known/mcp.json` | GET | MCP discovery (Claude Connector) |
 | `/mcp` | POST | JSON-RPC messages (Streamable HTTP) |
 | `/mcp` | GET | SSE stream (server-to-client) |
 | `/sse` | GET | Legacy SSE (sends endpoint event) |
@@ -137,15 +138,116 @@ The HTTP transport implements robust "mailbox" pattern for reliable connections:
 SEMANTIC_SCHOLAR_API_KEY=xxx ./target/release/semantic-scholar-mcp
 ```
 
-## Claude Desktop Config
+## Deployment Configurations
+
+### 1. Local stdio (Claude Desktop / Claude Code)
+
+For local development and Claude Desktop integration:
 
 ```json
 {
   "mcpServers": {
     "semantic-scholar": {
-      "command": "/path/to/semantic-scholar-mcp"
+      "command": "/path/to/semantic-scholar-mcp",
+      "env": {
+        "SEMANTIC_SCHOLAR_API_KEY": "your-api-key"
+      }
     }
   }
+}
+```
+
+Claude Code:
+```bash
+claude mcp add semantic-scholar /path/to/semantic-scholar-mcp
+```
+
+### 2. Remote HTTPS (Claude Connector)
+
+For Claude.ai and Claude Code remote connections via Claude Connector:
+
+**Docker Deployment:**
+```bash
+docker compose up -d
+```
+
+**Add to Claude Code:**
+```bash
+# Authless (no API key required for Semantic Scholar)
+claude mcp add --transport http semantic-scholar https://scholar.jovanovic.org.uk
+
+# With Bearer token authentication (if you add auth later)
+claude mcp add --transport http semantic-scholar https://scholar.jovanovic.org.uk \
+  --header "Authorization: Bearer your-token"
+```
+
+**Claude.ai Integration:**
+1. Navigate to Settings > Integrations
+2. Add Custom Connector
+3. Enter URL: `https://scholar.jovanovic.org.uk`
+4. Claude will auto-discover capabilities via `/.well-known/mcp.json`
+
+**Discovery Endpoint:** `GET /.well-known/mcp.json`
+```json
+{
+  "name": "semantic-scholar-mcp",
+  "version": "0.1.0",
+  "capabilities": { "tools": true, "resources": false, "prompts": false },
+  "auth": { "type": "none" },
+  "endpoints": {
+    "mcp": "https://scholar.jovanovic.org.uk/mcp",
+    "sse": "https://scholar.jovanovic.org.uk/sse",
+    "health": "https://scholar.jovanovic.org.uk/health"
+  }
+}
+```
+
+### 3. Docker Compose Production
+
+```yaml
+services:
+  semantic-scholar-mcp:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+      - RUST_LOG=info
+      - BASE_URL=https://scholar.jovanovic.org.uk
+    command: ["--transport", "http", "--port", "8000", "--base-url", "https://scholar.jovanovic.org.uk"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+### HTTPS Requirements for Claude Connector
+
+- **Valid TLS certificate** (Let's Encrypt, Cloudflare, etc.)
+- **Public HTTPS URL** (Claude Connector requires HTTPS)
+- **Reverse proxy** (nginx, Caddy, Traefik) for TLS termination
+
+Example nginx config:
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name scholar.jovanovic.org.uk;
+
+    ssl_certificate /etc/letsencrypt/live/scholar.jovanovic.org.uk/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/scholar.jovanovic.org.uk/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_buffering off;
+        proxy_cache off;
+    }
 }
 ```
 

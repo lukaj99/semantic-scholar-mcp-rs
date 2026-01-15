@@ -1,0 +1,16 @@
+services:
+  semantic-scholar-mcp:
+    build: .
+    container_name: semantic-scholar-mcp
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+      - RUST_LOG=info
+    command: ["--transport", "http", "--port", "8000", "--base-url", "https://scholar.jovanovic.org.uk"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

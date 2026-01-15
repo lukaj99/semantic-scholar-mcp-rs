@@ -176,7 +176,7 @@ async fn get_field_baseline(ctx: &ToolContext, _field: &str, year: i32, sample_s
                 let len = sorted.len();
                 if len == 1 {
                     sorted[0] as f64
-                } else if len.is_multiple_of(2) {
+                } else if len % 2 == 0 {
                     (sorted[len / 2 - 1] + sorted[len / 2]) as f64 / 2.0
                 } else {
                     sorted[len / 2] as f64

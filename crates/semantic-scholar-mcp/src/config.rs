@@ -15,17 +15,23 @@ pub mod api {
     /// Recommendations API endpoint.
     pub const RECOMMENDATIONS_API: &str = "https://api.semanticscholar.org/recommendations/v1";
 
-    /// Request timeout.
-    pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+    /// Request timeout (increased for complex operations like cocitation_analysis).
+    pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(90);
 
     /// Connection timeout.
     pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
-    /// Rate limit delay between requests (200ms = 5 req/s).
+    /// Rate limit delay between requests without API key (200ms = 5 req/s).
     pub const RATE_LIMIT_DELAY: Duration = Duration::from_millis(200);
 
-    /// Rate limit delay for batch requests (1s = 1 req/s).
+    /// Rate limit delay between requests with API key (10ms = 100 req/s).
+    pub const RATE_LIMIT_DELAY_WITH_KEY: Duration = Duration::from_millis(10);
+
+    /// Rate limit delay for batch requests without API key (1s = 1 req/s).
     pub const BATCH_RATE_LIMIT_DELAY: Duration = Duration::from_secs(1);
+
+    /// Rate limit delay for batch requests with API key (100ms = 10 req/s).
+    pub const BATCH_RATE_LIMIT_DELAY_WITH_KEY: Duration = Duration::from_millis(100);
 
     /// Cache TTL (5 minutes).
     pub const CACHE_TTL: Duration = Duration::from_secs(300);
@@ -120,16 +126,29 @@ pub struct Config {
 
 impl Config {
     /// Create a new configuration with optional API key.
+    ///
+    /// Rate limits are automatically adjusted based on API key presence:
+    /// - Without key: 5 req/s normal, 1 req/s batch
+    /// - With key: 100 req/s normal, 10 req/s batch
     #[must_use]
     pub fn new(api_key: Option<String>) -> Self {
+        let has_key = api_key.is_some();
         Self {
             api_key,
             graph_api_url: api::GRAPH_API.to_string(),
             recommendations_api_url: api::RECOMMENDATIONS_API.to_string(),
             request_timeout: api::REQUEST_TIMEOUT,
             connect_timeout: api::CONNECT_TIMEOUT,
-            rate_limit_delay: api::RATE_LIMIT_DELAY,
-            batch_rate_limit_delay: api::BATCH_RATE_LIMIT_DELAY,
+            rate_limit_delay: if has_key {
+                api::RATE_LIMIT_DELAY_WITH_KEY
+            } else {
+                api::RATE_LIMIT_DELAY
+            },
+            batch_rate_limit_delay: if has_key {
+                api::BATCH_RATE_LIMIT_DELAY_WITH_KEY
+            } else {
+                api::BATCH_RATE_LIMIT_DELAY
+            },
             cache_ttl: api::CACHE_TTL,
             cache_max_size: api::CACHE_MAX_SIZE,
         }

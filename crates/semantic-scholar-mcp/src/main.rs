@@ -46,13 +46,23 @@ enum Transport {
     Http,
 }
 
-fn init_tracing(log_level: &str, json: bool) {
+fn init_tracing(log_level: &str, json: bool, use_stderr: bool) {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(log_level));
 
     let subscriber = tracing_subscriber::registry().with(filter);
 
     if json {
-        subscriber.with(tracing_subscriber::fmt::layer().json()).init();
+        if use_stderr {
+            subscriber
+                .with(tracing_subscriber::fmt::layer().json().with_writer(std::io::stderr))
+                .init();
+        } else {
+            subscriber.with(tracing_subscriber::fmt::layer().json()).init();
+        }
+    } else if use_stderr {
+        subscriber
+            .with(tracing_subscriber::fmt::layer().compact().with_writer(std::io::stderr))
+            .init();
     } else {
         subscriber.with(tracing_subscriber::fmt::layer().compact()).init();
     }
@@ -62,7 +72,9 @@ fn init_tracing(log_level: &str, json: bool) {
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    init_tracing(&cli.log_level, cli.json_logs);
+    // In stdio mode, logs MUST go to stderr to avoid corrupting JSON-RPC protocol
+    let use_stderr = matches!(cli.transport, Transport::Stdio);
+    init_tracing(&cli.log_level, cli.json_logs, use_stderr);
 
     tracing::info!(
         version = env!("CARGO_PKG_VERSION"),

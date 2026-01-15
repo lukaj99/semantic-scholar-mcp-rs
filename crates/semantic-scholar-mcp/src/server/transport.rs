@@ -134,6 +134,8 @@ pub fn create_router(
         .route("/", get(health_check))
         .route("/health", get(health_check))
         .route("/ready", get(readiness_check))
+        // MCP discovery endpoint for Claude Connector
+        .route("/.well-known/mcp.json", get(handle_mcp_discovery))
         // Streamable HTTP transport - single endpoint
         .route("/mcp", post(handle_mcp_post).get(handle_mcp_get))
         // Legacy SSE transport for backward compatibility
@@ -151,6 +153,32 @@ async fn health_check() -> impl IntoResponse {
         "status": "ok",
         "service": "semantic-scholar-mcp",
         "version": env!("CARGO_PKG_VERSION")
+    }))
+}
+
+/// MCP discovery endpoint for Claude Connector.
+///
+/// Returns server capabilities and authentication requirements.
+/// See: <https://modelcontextprotocol.io/docs/develop/connect-remote-servers>
+async fn handle_mcp_discovery(State(state): State<Arc<HttpState>>) -> impl IntoResponse {
+    Json(serde_json::json!({
+        "name": "semantic-scholar-mcp",
+        "version": env!("CARGO_PKG_VERSION"),
+        "description": "MCP server for Semantic Scholar API - academic paper discovery, citation analysis, and bibliometrics",
+        "capabilities": {
+            "tools": true,
+            "resources": false,
+            "prompts": false
+        },
+        "auth": {
+            "type": "none"
+        },
+        "endpoints": {
+            "mcp": format!("{}/mcp", state.base_url),
+            "sse": format!("{}/sse", state.base_url),
+            "health": format!("{}/health", state.base_url)
+        },
+        "tools_count": state.tools.len()
     }))
 }
 
