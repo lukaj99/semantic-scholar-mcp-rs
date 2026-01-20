@@ -113,15 +113,21 @@ impl SemanticScholarClient {
         offset: i32,
         limit: i32,
         fields: &[&str],
+        filters: &[(String, String)],
     ) -> ClientResult<SearchResult> {
         let url = format!("{}/paper/search", self.graph_api_url);
 
-        let params = vec![
+        let mut params = vec![
             ("query".to_string(), query.to_string()),
             ("offset".to_string(), offset.to_string()),
             ("limit".to_string(), limit.to_string()),
             ("fields".to_string(), fields.join(",")),
         ];
+
+        // Add filter parameters
+        for (k, v) in filters {
+            params.push((k.clone(), v.clone()));
+        }
 
         self.get(&url, &params).await
     }

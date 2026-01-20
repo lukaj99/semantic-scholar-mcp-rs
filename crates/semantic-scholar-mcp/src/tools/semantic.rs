@@ -221,6 +221,23 @@ impl McpTool for LiteratureReviewPipelineTool {
         let max_search = params.max_papers.min(100);
         let mut search_papers = Vec::new();
 
+        // Build filter parameters for search
+        let mut filters: Vec<(String, String)> = Vec::new();
+
+        if let Some(min_year) = params.year_start {
+            if let Some(max_year) = params.year_end {
+                filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+            } else {
+                filters.push(("year".to_string(), format!("{}-", min_year)));
+            }
+        } else if let Some(max_year) = params.year_end {
+            filters.push(("year".to_string(), format!("-{}", max_year)));
+        }
+
+        if let Some(min_cites) = params.min_citations {
+            filters.push(("minCitationCount".to_string(), min_cites.to_string()));
+        }
+
         loop {
             if search_papers.len() >= max_search as usize {
                 break;
@@ -228,27 +245,11 @@ impl McpTool for LiteratureReviewPipelineTool {
 
             let result = ctx
                 .client
-                .search_papers(&params.query, offset, limit, fields::DEFAULT)
+                .search_papers(&params.query, offset, limit, fields::DEFAULT, &filters)
                 .await
                 .map_err(ToolError::from)?;
 
             for paper in result.data {
-                // Apply filters
-                if let Some(min_year) = params.year_start {
-                    if paper.year.unwrap_or(0) < min_year {
-                        continue;
-                    }
-                }
-                if let Some(max_year) = params.year_end {
-                    if paper.year.unwrap_or(i32::MAX) > max_year {
-                        continue;
-                    }
-                }
-                if let Some(min_cites) = params.min_citations {
-                    if paper.citations() < min_cites {
-                        continue;
-                    }
-                }
                 search_papers.push(paper);
             }
 

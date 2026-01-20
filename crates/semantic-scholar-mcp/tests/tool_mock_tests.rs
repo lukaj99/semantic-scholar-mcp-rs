@@ -86,9 +86,9 @@ async fn test_exhaustive_search_with_year_filter() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
+        .and(query_param("year", "2024-"))
         .respond_with(ResponseTemplate::new(200).set_body_json(sample_search_result(
             vec![
-                sample_paper_json("paper1", "Old Paper", 2020, 100),
                 sample_paper_json("paper2", "New Paper", 2024, 50),
             ],
             None,
@@ -113,10 +113,10 @@ async fn test_exhaustive_search_with_citation_filter() {
 
     Mock::given(method("GET"))
         .and(path("/graph/v1/paper/search"))
+        .and(query_param("minCitationCount", "100"))
         .respond_with(ResponseTemplate::new(200).set_body_json(sample_search_result(
             vec![
                 sample_paper_json("paper1", "Popular Paper", 2023, 500),
-                sample_paper_json("paper2", "Unpopular Paper", 2023, 5),
             ],
             None,
         )))

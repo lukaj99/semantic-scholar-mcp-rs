@@ -171,21 +171,22 @@ For Claude.ai and Claude Code remote connections via Claude Connector:
 docker compose up -d
 ```
 
+**Authentication:**
+This server uses **Bearer Token Authentication**.
+- **Token:** `MCP_SERVER_AUTH_TOKEN` (set in `.env`)
+- **Magic Link:** `https://your-domain.com?token=YOUR_TOKEN`
+
 **Add to Claude Code:**
 ```bash
-# Authless (no API key required for Semantic Scholar)
-claude mcp add --transport http semantic-scholar https://scholar.jovanovic.org.uk
-
-# With Bearer token authentication (if you add auth later)
-claude mcp add --transport http semantic-scholar https://scholar.jovanovic.org.uk \
-  --header "Authorization: Bearer your-token"
+# Connect using the authenticated endpoint directly (Recommended)
+claude mcp add --transport http semantic-scholar "https://scholar.jovanovic.org.uk/mcp?token=YOUR_TOKEN"
 ```
 
 **Claude.ai Integration:**
 1. Navigate to Settings > Integrations
 2. Add Custom Connector
-3. Enter URL: `https://scholar.jovanovic.org.uk`
-4. Claude will auto-discover capabilities via `/.well-known/mcp.json`
+3. Enter URL: `https://scholar.jovanovic.org.uk?token=YOUR_TOKEN`
+4. The server will auto-discover capabilities via `/.well-known/mcp.json` and inject the token into endpoints.
 
 **Discovery Endpoint:** `GET /.well-known/mcp.json`
 ```json
@@ -195,9 +196,9 @@ claude mcp add --transport http semantic-scholar https://scholar.jovanovic.org.u
   "capabilities": { "tools": true, "resources": false, "prompts": false },
   "auth": { "type": "none" },
   "endpoints": {
-    "mcp": "https://scholar.jovanovic.org.uk/mcp",
-    "sse": "https://scholar.jovanovic.org.uk/sse",
-    "health": "https://scholar.jovanovic.org.uk/health"
+    "mcp": "https://scholar.jovanovic.org.uk/mcp?token=YOUR_TOKEN",
+    "sse": "https://scholar.jovanovic.org.uk/sse?token=YOUR_TOKEN",
+    "health": "https://scholar.jovanovic.org.uk/health?token=YOUR_TOKEN"
   }
 }
 ```
@@ -213,6 +214,7 @@ services:
       - "8000:8000"
     environment:
       - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+      - MCP_SERVER_AUTH_TOKEN=${MCP_SERVER_AUTH_TOKEN}
       - RUST_LOG=info
       - BASE_URL=https://scholar.jovanovic.org.uk
     command: ["--transport", "http", "--port", "8000", "--base-url", "https://scholar.jovanovic.org.uk"]
@@ -274,3 +276,5 @@ cargo test test_paper_deserialize
 - Input models require camelCase JSON (MCP protocol)
 - API returns null for invalid paper IDs in batch requests
 - Year field may vary for papers with multiple versions
+- Server-side filtering implemented for optimal API usage
+- Bearer token authentication with "Magic Link" support for Claude.ai

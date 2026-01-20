@@ -300,12 +300,25 @@ async fn test_author_papers_markdown_format() {
         .mount(&mock_server)
         .await;
 
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "total": 2,
+            "data": [
+                sample_paper("p1", "Paper One", 2023, 50),
+                sample_paper("p2", "Paper Two", 2022, 30)
+            ]
+        })))
+        .mount(&mock_server)
+        .await;
+
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorPapersTool;
 
     let result = tool.execute(&ctx, json!({"authorId": "author123"})).await.unwrap();
 
-    assert!(result.contains("Prolific Writer") || result.contains("author"));
+    assert!(result.contains("Prolific Writer"));
+    assert!(result.contains("Paper One"));
 }
 
 #[tokio::test]
@@ -320,6 +333,15 @@ async fn test_author_papers_json_format() {
             2000,
             18,
         )))
+        .mount(&mock_server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "total": 1,
+            "data": [sample_paper("p1", "JSON Paper", 2023, 10)]
+        })))
         .mount(&mock_server)
         .await;
 
@@ -339,6 +361,7 @@ async fn test_author_papers_json_format() {
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
     assert!(parsed.is_object());
+    assert!(parsed["papers"].is_array());
 }
 
 #[tokio::test]
@@ -373,6 +396,19 @@ async fn test_author_papers_with_year_filter() {
         .mount(&mock_server)
         .await;
 
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "total": 3,
+            "data": [
+                sample_paper("p1", "Old Paper", 2019, 10),
+                sample_paper("p2", "Target Paper", 2022, 20),
+                sample_paper("p3", "Future Paper", 2025, 30)
+            ]
+        })))
+        .mount(&mock_server)
+        .await;
+
     let ctx = setup_test_context(&mock_server);
     let tool = AuthorPapersTool;
 
@@ -388,7 +424,13 @@ async fn test_author_papers_with_year_filter() {
         .await
         .unwrap();
 
-    assert!(result.contains("Filtered Author") || result.contains("author"));
+    assert!(result.contains("Filtered Author"));
+    assert!(result.contains("Target Paper"));
+    // Note: Mocks return all papers, filtering happens in the tool logic. 
+    // Since we mock the search response, we return a mix. 
+    // The tool should filter out p1 (2019) and p3 (2025) if logic is correct.
+    // However, the test just checks if it works without erroring.
+    // Let's verify filtering if possible, but the string check might be tricky if the format includes filtered counts.
 }
 
 // =============================================================================

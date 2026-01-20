@@ -67,6 +67,11 @@ impl McpTool for ResearchTrendsTool {
         let mut offset = 0;
         let limit = 100;
 
+        // Build filter parameters
+        let filters = vec![
+            ("year".to_string(), format!("{}-{}", params.year_start, params.year_end))
+        ];
+
         loop {
             if all_papers.len() >= max_results as usize {
                 break;
@@ -74,16 +79,12 @@ impl McpTool for ResearchTrendsTool {
 
             let result = ctx
                 .client
-                .search_papers(&params.query, offset, limit, fields::DEFAULT)
+                .search_papers(&params.query, offset, limit, fields::DEFAULT, &filters)
                 .await
                 .map_err(ToolError::from)?;
 
             for paper in result.data {
-                if let Some(year) = paper.year {
-                    if year >= params.year_start && year <= params.year_end {
-                        all_papers.push(paper);
-                    }
-                }
+                all_papers.push(paper);
             }
 
             if result.next.is_none() {
@@ -235,6 +236,19 @@ impl McpTool for VenueAnalyticsTool {
         let mut offset = 0;
         let limit = 100;
 
+        // Build filter parameters
+        let mut filters: Vec<(String, String)> = Vec::new();
+
+        if let Some(min_year) = params.year_start {
+            if let Some(max_year) = params.year_end {
+                filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+            } else {
+                filters.push(("year".to_string(), format!("{}-", min_year)));
+            }
+        } else if let Some(max_year) = params.year_end {
+            filters.push(("year".to_string(), format!("-{}", max_year)));
+        }
+
         loop {
             if all_papers.len() >= params.max_papers as usize {
                 break;
@@ -242,22 +256,11 @@ impl McpTool for VenueAnalyticsTool {
 
             let result = ctx
                 .client
-                .search_papers(&params.venue_query, offset, limit, fields::DEFAULT)
+                .search_papers(&params.venue_query, offset, limit, fields::DEFAULT, &filters)
                 .await
                 .map_err(ToolError::from)?;
 
             for paper in result.data {
-                // Apply year filters
-                if let Some(min_year) = params.year_start {
-                    if paper.year.unwrap_or(0) < min_year {
-                        continue;
-                    }
-                }
-                if let Some(max_year) = params.year_end {
-                    if paper.year.unwrap_or(i32::MAX) > max_year {
-                        continue;
-                    }
-                }
                 all_papers.push(paper);
             }
 

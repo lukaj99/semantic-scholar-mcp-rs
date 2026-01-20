@@ -99,6 +99,9 @@ pub struct Config {
     /// Semantic Scholar API key (optional).
     pub api_key: Option<String>,
 
+    /// Authentication token for the MCP server (optional).
+    pub auth_token: Option<String>,
+
     /// Base URL for Graph API (for testing with mock servers).
     pub graph_api_url: String,
 
@@ -131,10 +134,11 @@ impl Config {
     /// - Without key: 5 req/s normal, 1 req/s batch
     /// - With key: 100 req/s normal, 10 req/s batch
     #[must_use]
-    pub fn new(api_key: Option<String>) -> Self {
+    pub fn new(api_key: Option<String>, auth_token: Option<String>) -> Self {
         let has_key = api_key.is_some();
         Self {
             api_key,
+            auth_token,
             graph_api_url: api::GRAPH_API.to_string(),
             recommendations_api_url: api::RECOMMENDATIONS_API.to_string(),
             request_timeout: api::REQUEST_TIMEOUT,
@@ -159,6 +163,7 @@ impl Config {
     pub fn for_testing(base_url: &str) -> Self {
         Self {
             api_key: None,
+            auth_token: None,
             graph_api_url: format!("{}/graph/v1", base_url),
             recommendations_api_url: format!("{}/recommendations/v1", base_url),
             request_timeout: Duration::from_secs(5),
@@ -177,7 +182,8 @@ impl Config {
     /// Returns error if environment variables are invalid.
     pub fn from_env() -> anyhow::Result<Self> {
         let api_key = std::env::var("SEMANTIC_SCHOLAR_API_KEY").ok();
-        Ok(Self::new(api_key))
+        let auth_token = std::env::var("MCP_SERVER_AUTH_TOKEN").ok();
+        Ok(Self::new(api_key, auth_token))
     }
 
     /// Check if an API key is configured.
@@ -189,7 +195,7 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self::new(None)
+        Self::new(None, None)
     }
 }
 
@@ -206,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_config_with_api_key() {
-        let config = Config::new(Some("test-key".to_string()));
+        let config = Config::new(Some("test-key".to_string()), None);
         assert!(config.has_api_key());
         assert_eq!(config.api_key, Some("test-key".to_string()));
     }

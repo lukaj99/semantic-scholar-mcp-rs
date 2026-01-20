@@ -182,16 +182,85 @@ impl McpTool for AuthorPapersTool {
         // Get author info first
         let author = ctx.client.get_author(&params.author_id).await.map_err(ToolError::from)?;
 
-        // TODO: Implement paginated author papers fetch
-        // For now, return author info with a placeholder
+        // Search papers by author
+        let mut all_papers = Vec::new();
+        let mut offset = 0;
+        let limit = 100;
+        let max_results = params.limit;
+
+        // Build filter parameters
+        let mut filters: Vec<(String, String)> = Vec::new();
+
+        if let Some(min_year) = params.year_start {
+            if let Some(max_year) = params.year_end {
+                filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+            } else {
+                filters.push(("year".to_string(), format!("{}-", min_year)));
+            }
+        } else if let Some(max_year) = params.year_end {
+            filters.push(("year".to_string(), format!("-{}", max_year)));
+        }
+
+        loop {
+            if all_papers.len() as i32 >= max_results {
+                break;
+            }
+
+            let result = ctx
+                .client
+                .search_papers(
+                    &format!("author:{}", params.author_id),
+                    offset,
+                    limit,
+                    fields::DEFAULT,
+                    &filters,
+                )
+                .await
+                .map_err(ToolError::from)?;
+
+            for paper in result.data {
+                all_papers.push(paper);
+
+                if all_papers.len() as i32 >= max_results {
+                    break;
+                }
+            }
+
+            if result.next.is_none() {
+                break;
+            }
+            offset = result.next.unwrap_or(offset + limit);
+        }
+
         match params.response_format {
             ResponseFormat::Markdown => {
                 let mut output = formatters::format_author_markdown(&author);
-                output.push_str("\n\n*Note: Paper list not yet implemented*");
+                output.push_str(&format!(
+                    "\n\n## Papers ({} found)\n\n",
+                    all_papers.len()
+                ));
+
+                if params.year_start.is_some() || params.year_end.is_some() {
+                    output.push_str(&format!(
+                        "**Period:** {} - {}\n\n",
+                        params
+                            .year_start
+                            .map(|y| y.to_string())
+                            .unwrap_or_else(|| "any".to_string()),
+                        params.year_end.map(|y| y.to_string()).unwrap_or_else(|| "any".to_string())
+                    ));
+                }
+
+                output.push_str(&formatters::format_papers_markdown(&all_papers));
                 Ok(output)
             }
             ResponseFormat::Json => {
-                Ok(serde_json::to_string_pretty(&formatters::compact_author(&author))?)
+                let compact_papers: Vec<_> = all_papers.iter().map(formatters::compact_paper).collect();
+                Ok(serde_json::to_string_pretty(&json!({
+                    "author": formatters::compact_author(&author),
+                    "papers": compact_papers,
+                    "count": all_papers.len()
+                }))?)
             }
         }
     }

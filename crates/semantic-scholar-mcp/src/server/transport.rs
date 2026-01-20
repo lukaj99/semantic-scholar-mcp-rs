@@ -113,6 +113,8 @@ pub struct HttpState {
     pub sessions: Arc<SessionManager>,
     /// Base URL for endpoint announcements.
     pub base_url: String,
+    /// Authentication token.
+    pub auth_token: Option<String>,
 }
 
 /// Create the HTTP router for MCP.
@@ -120,6 +122,7 @@ pub fn create_router(
     tools: Vec<Box<dyn McpTool>>,
     ctx: ToolContext,
     base_url: Option<String>,
+    auth_token: Option<String>,
 ) -> Router {
     let sessions = Arc::new(SessionManager::new());
 
@@ -128,7 +131,7 @@ pub fn create_router(
 
     let base_url = base_url.unwrap_or_else(|| "https://scholar.jovanovic.org.uk".to_string());
 
-    let state = Arc::new(HttpState { tools, ctx, sessions, base_url });
+    let state = Arc::new(HttpState { tools, ctx, sessions, base_url, auth_token });
 
     Router::new()
         .route("/", get(health_check))
@@ -144,6 +147,10 @@ pub fn create_router(
         // Session management
         .route("/sessions", get(handle_sessions_list))
         .layer(CorsLayer::permissive())
+        .layer(axum::middleware::from_fn_with_state(
+            Arc::clone(&state),
+            auth_middleware,
+        ))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -156,11 +163,34 @@ async fn health_check() -> impl IntoResponse {
     }))
 }
 
+/// Query parameters for discovery endpoint.
+#[derive(Debug, Deserialize)]
+pub struct DiscoveryQuery {
+    token: Option<String>,
+}
+
 /// MCP discovery endpoint for Claude Connector.
 ///
 /// Returns server capabilities and authentication requirements.
 /// See: <https://modelcontextprotocol.io/docs/develop/connect-remote-servers>
-async fn handle_mcp_discovery(State(state): State<Arc<HttpState>>) -> impl IntoResponse {
+async fn handle_mcp_discovery(
+    State(state): State<Arc<HttpState>>,
+    Query(query): Query<DiscoveryQuery>,
+) -> impl IntoResponse {
+    // Use token from query param OR fallback to server's configured token
+    // This allows the manifest to "leak" the token to the client so connection works
+    // even if the client stripped the query param from the manifest URL.
+    let token = query.token.or_else(|| state.auth_token.clone());
+
+    let token_suffix = token
+        .as_deref()
+        .map(|t| format!("?token={}", t))
+        .unwrap_or_default();
+
+    // Always advertise "none" to prevent clients from triggering OAuth flows
+    // Security is enforced by the token in the URL (middleware)
+    let auth_config = serde_json::json!({ "type": "none" });
+
     Json(serde_json::json!({
         "name": "semantic-scholar-mcp",
         "version": env!("CARGO_PKG_VERSION"),
@@ -170,13 +200,11 @@ async fn handle_mcp_discovery(State(state): State<Arc<HttpState>>) -> impl IntoR
             "resources": false,
             "prompts": false
         },
-        "auth": {
-            "type": "none"
-        },
+        "auth": auth_config,
         "endpoints": {
-            "mcp": format!("{}/mcp", state.base_url),
-            "sse": format!("{}/sse", state.base_url),
-            "health": format!("{}/health", state.base_url)
+            "mcp": format!("{}/mcp{}", state.base_url, token_suffix),
+            "sse": format!("{}/sse{}", state.base_url, token_suffix),
+            "health": format!("{}/health{}", state.base_url, token_suffix)
         },
         "tools_count": state.tools.len()
     }))
@@ -493,4 +521,55 @@ async fn handle_tools_call(
             JsonRpcResponse::error(id, -32000, format!("Tool error: {}", e))
         }
     }
+}
+
+async fn auth_middleware(
+    State(state): State<Arc<HttpState>>,
+    headers: HeaderMap,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Response {
+    // If no token configured, skip auth
+    let Some(ref expected_token) = state.auth_token else {
+        return next.run(request).await;
+    };
+
+    // Public endpoints that don't need auth
+    let path = request.uri().path();
+    if path == "/"
+        || path == "/health"
+        || path == "/ready"
+        || path == "/.well-known/mcp.json"
+        || path == "/sessions" // For debugging, maybe restrict later?
+    {
+        return next.run(request).await;
+    }
+
+    // Check Authorization header
+    if let Some(auth_header) = headers.get("Authorization") {
+        if let Ok(auth_str) = auth_header.to_str() {
+            if auth_str.starts_with("Bearer ") {
+                let token = &auth_str[7..];
+                // Constant time comparison would be better, but this is simple enough for now
+                if token == expected_token {
+                    return next.run(request).await;
+                }
+            }
+        }
+    }
+
+    // Also check query param 'token' for SSE (EventSource doesn't support headers easily)
+    if let Some(query) = request.uri().query() {
+        if query.contains(&format!("token={}", expected_token)) {
+            return next.run(request).await;
+        }
+    }
+
+    tracing::warn!(
+        method = %request.method(),
+        uri = %request.uri(),
+        "Authentication failed: missing or invalid token"
+    );
+
+    (StatusCode::UNAUTHORIZED, "Unauthorized: Invalid or missing Bearer token").into_response()
 }

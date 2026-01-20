@@ -78,6 +78,31 @@ impl McpTool for ExhaustiveSearchTool {
             fields::DEFAULT.to_vec()
         };
 
+        // Build filter parameters
+        let mut filters: Vec<(String, String)> = Vec::new();
+
+        if let Some(ref fields) = params.fields_of_study {
+            filters.push(("fieldsOfStudy".to_string(), fields.join(",")));
+        }
+
+        if let Some(min_year) = params.year_start {
+            if let Some(max_year) = params.year_end {
+                filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+            } else {
+                filters.push(("year".to_string(), format!("{}-", min_year)));
+            }
+        } else if let Some(max_year) = params.year_end {
+            filters.push(("year".to_string(), format!("-{}", max_year)));
+        }
+
+        if let Some(min_citations) = params.min_citations {
+            filters.push(("minCitationCount".to_string(), min_citations.to_string()));
+        }
+
+        if params.open_access_only {
+            filters.push(("openAccessPdf".to_string(), String::new()));
+        }
+
         let mut all_papers = Vec::new();
         let mut offset = 0;
         let limit = 100; // API max per page
@@ -91,31 +116,11 @@ impl McpTool for ExhaustiveSearchTool {
 
             let result = ctx
                 .client
-                .search_papers(&params.query, offset, limit, &field_list)
+                .search_papers(&params.query, offset, limit, &field_list, &filters)
                 .await
                 .map_err(ToolError::from)?;
 
             for paper in result.data {
-                // Apply filters
-                if let Some(min_year) = params.year_start {
-                    if paper.year.unwrap_or(0) < min_year {
-                        continue;
-                    }
-                }
-                if let Some(max_year) = params.year_end {
-                    if paper.year.unwrap_or(i32::MAX) > max_year {
-                        continue;
-                    }
-                }
-                if let Some(min_citations) = params.min_citations {
-                    if paper.citations() < min_citations {
-                        continue;
-                    }
-                }
-                if params.open_access_only && paper.pdf_url().is_none() {
-                    continue;
-                }
-
                 all_papers.push(paper);
 
                 if all_papers.len() as i32 >= max_results {

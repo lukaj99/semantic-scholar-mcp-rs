@@ -56,11 +56,19 @@ impl McpServer {
     /// # Errors
     ///
     /// Returns error on server failure.
-    pub async fn run_http(self, port: u16, base_url: Option<String>) -> anyhow::Result<()> {
+    pub async fn run_http(
+        self,
+        port: u16,
+        base_url: Option<String>,
+        auth_token: Option<String>,
+    ) -> anyhow::Result<()> {
         tracing::info!("Starting MCP server in HTTP mode on port {}", port);
         tracing::info!("Registered {} tools", self.tools.len());
+        if auth_token.is_some() {
+            tracing::info!("Authentication enabled");
+        }
 
-        let router = transport::create_router(self.tools, self.ctx, base_url);
+        let router = transport::create_router(self.tools, self.ctx, base_url, auth_token);
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
         tracing::info!("HTTP server listening on http://{}", addr);

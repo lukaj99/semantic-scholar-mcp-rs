@@ -161,7 +161,7 @@ async fn get_field_baseline(ctx: &ToolContext, _field: &str, year: i32, sample_s
     // Search for papers in this field-year to estimate baseline
     let result = ctx
         .client
-        .search_papers(&format!("year:{}", year), 0, sample_size, &["citationCount"])
+        .search_papers(&format!("year:{}", year), 0, sample_size, &["citationCount"], &[])
         .await;
 
     match result {
@@ -320,7 +320,7 @@ async fn get_percentile_threshold(
     percentile: f64,
 ) -> i32 {
     let result =
-        ctx.client.search_papers(&format!("year:{}", year), 0, 500, &["citationCount"]).await;
+        ctx.client.search_papers(&format!("year:{}", year), 0, 500, &["citationCount"], &[]).await;
 
     match result {
         Ok(search_result) => {
@@ -869,6 +869,12 @@ impl McpTool for HotPapersTool {
         let mut offset = 0;
         let limit = 100;
 
+        // Build filter parameters
+        let filters = vec![
+            ("year".to_string(), format!("{}-", year_start)),
+            ("minCitationCount".to_string(), params.min_recent_citations.to_string())
+        ];
+
         loop {
             if all_papers.len() >= params.max_papers as usize {
                 break;
@@ -876,16 +882,12 @@ impl McpTool for HotPapersTool {
 
             let result = ctx
                 .client
-                .search_papers(&params.query, offset, limit, fields::DEFAULT)
+                .search_papers(&params.query, offset, limit, fields::DEFAULT, &filters)
                 .await
                 .map_err(ToolError::from)?;
 
             for paper in result.data {
-                if let Some(year) = paper.year {
-                    if year >= year_start && paper.citations() >= params.min_recent_citations {
-                        all_papers.push(paper);
-                    }
-                }
+                all_papers.push(paper);
             }
 
             if result.next.is_none() {

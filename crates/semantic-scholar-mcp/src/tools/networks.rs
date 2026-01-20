@@ -79,6 +79,7 @@ impl McpTool for AuthorNetworkTool {
                     offset,
                     limit,
                     fields::DEFAULT,
+                    &[],
                 )
                 .await;
 

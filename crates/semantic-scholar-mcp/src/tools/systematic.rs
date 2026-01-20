@@ -74,6 +74,23 @@ impl McpTool for PrismaSearchTool {
             let limit = 100;
             let mut query_papers = Vec::new();
 
+            // Build filter parameters
+            let mut filters: Vec<(String, String)> = Vec::new();
+
+            if let Some(min_year) = params.year_start {
+                if let Some(max_year) = params.year_end {
+                    filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+                } else {
+                    filters.push(("year".to_string(), format!("{}-", min_year)));
+                }
+            } else if let Some(max_year) = params.year_end {
+                filters.push(("year".to_string(), format!("-{}", max_year)));
+            }
+
+            if let Some(min_citations) = params.min_citations {
+                filters.push(("minCitationCount".to_string(), min_citations.to_string()));
+            }
+
             // Paginate through results
             loop {
                 if query_papers.len() >= params.max_results_per_query as usize {
@@ -82,27 +99,11 @@ impl McpTool for PrismaSearchTool {
 
                 let result = ctx
                     .client
-                    .search_papers(query, offset, limit, fields::DEFAULT)
+                    .search_papers(query, offset, limit, fields::DEFAULT, &filters)
                     .await
                     .map_err(ToolError::from)?;
 
                 for paper in result.data {
-                    // Apply filters
-                    if let Some(min_year) = params.year_start {
-                        if paper.year.unwrap_or(0) < min_year {
-                            continue;
-                        }
-                    }
-                    if let Some(max_year) = params.year_end {
-                        if paper.year.unwrap_or(i32::MAX) > max_year {
-                            continue;
-                        }
-                    }
-                    if let Some(min_citations) = params.min_citations {
-                        if paper.citations() < min_citations {
-                            continue;
-                        }
-                    }
                     query_papers.push(paper);
                 }
 

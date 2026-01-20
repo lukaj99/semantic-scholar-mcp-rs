@@ -106,7 +106,7 @@ impl McpTool for PearlGrowingTool {
                     let query = keywords[..keywords.len().min(5)].join(" ");
                     if let Ok(search_result) = ctx
                         .client
-                        .search_papers(&query, 0, params.max_papers_per_iteration, fields::DEFAULT)
+                        .search_papers(&query, 0, params.max_papers_per_iteration, fields::DEFAULT, &[])
                         .await
                     {
                         let mut new_count = 0;
@@ -136,7 +136,7 @@ impl McpTool for PearlGrowingTool {
                 for author_id in author_ids.iter().take(3) {
                     if let Ok(search_result) = ctx
                         .client
-                        .search_papers(&format!("author:{}", author_id), 0, 20, fields::DEFAULT)
+                        .search_papers(&format!("author:{}", author_id), 0, 20, fields::DEFAULT, &[])
                         .await
                     {
                         let mut new_count = 0;
@@ -385,6 +385,7 @@ impl McpTool for OrcidAuthorLookupTool {
                         offset,
                         limit,
                         fields::DEFAULT,
+                        &[],
                     )
                     .await;
 

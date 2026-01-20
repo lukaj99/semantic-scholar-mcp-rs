@@ -6,6 +6,7 @@ services:
     network_mode: host
     environment:
       - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+      - MCP_SERVER_AUTH_TOKEN=${MCP_SERVER_AUTH_TOKEN}
       - RUST_LOG=info
     command: ["--transport", "http", "--port", "8000", "--base-url", "https://scholar.jovanovic.org.uk"]
     healthcheck:

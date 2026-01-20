@@ -20,6 +20,10 @@ struct Cli {
     #[arg(long, default_value = "stdio")]
     transport: Transport,
 
+    /// Authentication token for HTTP transport (optional)
+    #[arg(long, env = "MCP_SERVER_AUTH_TOKEN")]
+    auth_token: Option<String>,
+
     /// HTTP server port (only used with --transport http)
     #[arg(long, default_value = "8000", env = "PORT")]
     port: u16,
@@ -70,6 +74,9 @@ fn init_tracing(log_level: &str, json: bool, use_stderr: bool) {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Load environment variables from .env file if present
+    dotenv::dotenv().ok();
+
     let cli = Cli::parse();
 
     // In stdio mode, logs MUST go to stderr to avoid corrupting JSON-RPC protocol
@@ -82,7 +89,7 @@ async fn main() -> anyhow::Result<()> {
         "Starting Semantic Scholar MCP server"
     );
 
-    let config = Config::new(cli.api_key);
+    let config = Config::new(cli.api_key, cli.auth_token.clone());
     tracing::info!(has_api_key = config.has_api_key(), "API configuration");
     let client = SemanticScholarClient::new(config)?;
     let server = McpServer::new(client);
@@ -94,7 +101,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Transport::Http => {
             tracing::info!(port = cli.port, base_url = ?cli.base_url, "Running in HTTP mode");
-            server.run_http(cli.port, cli.base_url).await?;
+            server.run_http(cli.port, cli.base_url, cli.auth_token).await?;
         }
     }
 
