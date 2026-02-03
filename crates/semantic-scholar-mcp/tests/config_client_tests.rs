@@ -17,14 +17,14 @@ fn test_config_default_has_no_api_key() {
 
 #[test]
 fn test_config_with_api_key() {
-    let config = Config::new(Some("test-key".to_string()));
+    let config = Config::new(Some("test-key".to_string()), None);
     assert!(config.has_api_key());
     assert_eq!(config.api_key.as_deref(), Some("test-key"));
 }
 
 #[test]
 fn test_config_clone_preserves_api_key() {
-    let config = Config::new(Some("secret".to_string()));
+    let config = Config::new(Some("secret".to_string()), None);
     let cloned = config.clone();
     assert_eq!(config.api_key, cloned.api_key);
 }
@@ -42,14 +42,14 @@ fn test_client_creation_succeeds() {
 
 #[test]
 fn test_client_with_api_key_succeeds() {
-    let config = Config::new(Some("test-key".to_string()));
+    let config = Config::new(Some("test-key".to_string()), None);
     let client = SemanticScholarClient::new(config);
     assert!(client.is_ok());
 }
 
 #[test]
 fn test_client_reports_api_key_status() {
-    let config = Config::new(Some("key".to_string()));
+    let config = Config::new(Some("key".to_string()), None);
     let client = SemanticScholarClient::new(config).unwrap();
     assert!(client.has_api_key());
 
@@ -60,7 +60,7 @@ fn test_client_reports_api_key_status() {
 
 #[test]
 fn test_client_debug_hides_api_key() {
-    let config = Config::new(Some("super-secret-key".to_string()));
+    let config = Config::new(Some("super-secret-key".to_string()), None);
     let client = SemanticScholarClient::new(config).unwrap();
     let debug = format!("{client:?}");
     // API key should NOT appear in debug output

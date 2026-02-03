@@ -12,24 +12,24 @@ repository = "https://github.com/luka/semantic-scholar-mcp-rs"
 
 [workspace.dependencies]
 # Async runtime
-tokio = { version = "1.43", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 
 # HTTP client with HTTP/2 support
-reqwest = { version = "0.12", default-features = false, features = [
+reqwest = { version = "0.13", default-features = false, features = [
     "json",
     "http2",
-    "rustls-tls",
+    "rustls",
     "gzip",
 ] }
-reqwest-middleware = "0.4"
-reqwest-retry = "0.7"
+reqwest-middleware = { version = "0.5", features = ["query"] }
+reqwest-retry = "0.9"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Error handling
-thiserror = "2"
+thiserror = "2.0"
 anyhow = "1"
 
 # CLI
@@ -47,7 +47,7 @@ governor = "0.8"
 moka = { version = "0.12", features = ["future"] }
 
 # HTTP Server
-axum = { version = "0.8", features = ["json"] }
+axum = { version = "0.8.8", features = ["json"] }
 axum-extra = { version = "0.10", features = ["typed-header"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 
