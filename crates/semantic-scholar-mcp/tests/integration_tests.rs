@@ -204,7 +204,7 @@ async fn test_get_recommendations_multiple_seeds() {
 async fn test_search_authors() {
     let client = create_client();
     let result =
-        client.search_authors("Geoffrey Hinton", 0, 5).await.expect("Author search should succeed");
+        client.search_authors("Geoffrey Hinton", 0, 5, fields::AUTHOR).await.expect("Author search should succeed");
 
     assert!(!result.data.is_empty(), "Should find Geoffrey Hinton");
 }

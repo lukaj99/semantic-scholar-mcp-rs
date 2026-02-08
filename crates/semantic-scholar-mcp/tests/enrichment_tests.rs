@@ -102,7 +102,9 @@ async fn test_batch_metadata_json_format() {
         .unwrap();
 
     let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
-    assert!(parsed.is_array());
+    assert!(parsed.is_object());
+    assert!(parsed["found"].is_array());
+    assert!(parsed["not_found"].is_array());
 }
 
 #[tokio::test]
@@ -301,7 +303,7 @@ async fn test_author_papers_markdown_format() {
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/author123/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "total": 2,
             "data": [
@@ -337,7 +339,7 @@ async fn test_author_papers_json_format() {
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/json_author/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "total": 1,
             "data": [sample_paper("p1", "JSON Paper", 2023, 10)]
@@ -397,7 +399,7 @@ async fn test_author_papers_with_year_filter() {
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/filtered/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "total": 3,
             "data": [
@@ -426,11 +428,9 @@ async fn test_author_papers_with_year_filter() {
 
     assert!(result.contains("Filtered Author"));
     assert!(result.contains("Target Paper"));
-    // Note: Mocks return all papers, filtering happens in the tool logic.
-    // Since we mock the search response, we return a mix.
-    // The tool should filter out p1 (2019) and p3 (2025) if logic is correct.
-    // However, the test just checks if it works without erroring.
-    // Let's verify filtering if possible, but the string check might be tricky if the format includes filtered counts.
+    // p1 (2019) and p3 (2025) should be filtered out by yearStart=2020/yearEnd=2024
+    assert!(!result.contains("Old Paper"));
+    assert!(!result.contains("Future Paper"));
 }
 
 // =============================================================================
@@ -501,6 +501,69 @@ fn test_author_papers_tool_input_schema() {
 }
 
 // =============================================================================
+// PaperTitleMatch — data wrapper format
+// =============================================================================
+
+#[tokio::test]
+async fn test_paper_title_match_data_wrapper() {
+    let mock_server = MockServer::start().await;
+
+    // API returns {"data": [Paper]} wrapper format
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/match"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [sample_paper("p1", "Wrapped Paper", 2023, 42)]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server);
+    let tool = PaperTitleMatchTool;
+
+    let result = tool.execute(&ctx, json!({"title": "Wrapped Paper"})).await.unwrap();
+
+    assert!(result.contains("Wrapped Paper"));
+}
+
+// =============================================================================
+// BatchMetadata — mixed found/not-found
+// =============================================================================
+
+#[tokio::test]
+async fn test_batch_metadata_partial_not_found() {
+    let mock_server = MockServer::start().await;
+
+    // API returns [Paper, null, Paper] for batch with invalid ID
+    Mock::given(method("POST"))
+        .and(path("/graph/v1/paper/batch"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            sample_paper("p1", "Found Paper One", 2023, 100),
+            null,
+            sample_paper("p3", "Found Paper Three", 2022, 50)
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server);
+    let tool = BatchMetadataTool;
+
+    let result = tool
+        .execute(
+            &ctx,
+            json!({
+                "paperIds": ["p1", "INVALID_ID", "p3"]
+            }),
+        )
+        .await
+        .unwrap();
+
+    assert!(result.contains("Found Paper One"));
+    assert!(result.contains("Found Paper Three"));
+    assert!(result.contains("Not found (1)"));
+    assert!(result.contains("INVALID_ID"));
+}
+
+// =============================================================================
 // PaperAutocompleteTool Tests
 // =============================================================================
 
@@ -516,6 +579,16 @@ async fn test_paper_autocomplete_basic() {
                 {"id": "p2", "match": "Attention Mechanisms in Neural Networks"}
             ]
         })))
+        .mount(&mock_server)
+        .await;
+
+    // Autocomplete now enriches results with batch metadata
+    Mock::given(method("POST"))
+        .and(path("/graph/v1/paper/batch"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {"paperId": "p1", "title": "Attention Is All You Need", "year": 2017, "citationCount": 50000, "authors": []},
+            {"paperId": "p2", "title": "Attention Mechanisms in Neural Networks", "year": 2019, "citationCount": 100, "authors": []}
+        ])))
         .mount(&mock_server)
         .await;
 
@@ -536,6 +609,14 @@ async fn test_paper_autocomplete_json_format() {
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "matches": [{"id": "p1", "match": "Test Paper"}]
         })))
+        .mount(&mock_server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/graph/v1/paper/batch"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {"paperId": "p1", "title": "Test Paper", "year": 2023, "citationCount": 10, "authors": []}
+        ])))
         .mount(&mock_server)
         .await;
 
