@@ -95,13 +95,16 @@ impl ClientError {
         match self {
             Self::RateLimited { .. } | Self::Timeout(_) | Self::Server { .. } => true,
             Self::Middleware(e) => {
-                // reqwest-retry wraps transport errors (timeouts, connection resets)
-                // as Middleware errors — check the inner reqwest error
-                if let Some(reqwest_err) = e.source().and_then(|s| s.downcast_ref::<reqwest::Error>()) {
-                    reqwest_err.is_timeout() || reqwest_err.is_connect()
-                } else {
-                    false
+                // reqwest-retry wraps errors through RetryError -> anyhow -> Middleware,
+                // so walk the full source chain to find the underlying reqwest::Error
+                let mut source: Option<&(dyn Error + 'static)> = Some(e);
+                while let Some(err) = source {
+                    if let Some(reqwest_err) = err.downcast_ref::<reqwest::Error>() {
+                        return reqwest_err.is_timeout() || reqwest_err.is_connect();
+                    }
+                    source = err.source();
                 }
+                false
             }
             _ => false,
         }
@@ -204,6 +207,11 @@ mod tests {
 
         assert!(!ClientError::not_found("paper123").is_retryable());
         assert!(!ClientError::bad_request("invalid query").is_retryable());
+
+        // Middleware-wrapped non-reqwest errors are not retryable
+        let middleware_err =
+            reqwest_middleware::Error::Middleware(anyhow::anyhow!("some other error"));
+        assert!(!ClientError::Middleware(middleware_err).is_retryable());
     }
 
     #[test]
