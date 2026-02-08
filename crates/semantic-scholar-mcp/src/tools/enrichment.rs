@@ -60,17 +60,40 @@ impl McpTool for BatchMetadataTool {
             .map(|f| f.iter().map(String::as_str).collect())
             .unwrap_or_else(|| fields::DEFAULT.to_vec());
 
-        let papers = ctx
+        let all_results = ctx
             .client
-            .get_papers_batch(&params.paper_ids, &field_list)
+            .get_papers_batch_with_nulls(&params.paper_ids, &field_list)
             .await
             .map_err(ToolError::from)?;
 
+        // Identify which IDs were not found
+        let mut not_found: Vec<&str> = Vec::new();
+        let mut papers = Vec::new();
+        for (id, result) in params.paper_ids.iter().zip(all_results.iter()) {
+            match result {
+                Some(paper) => papers.push(paper.clone()),
+                None => not_found.push(id),
+            }
+        }
+
         match params.response_format {
-            ResponseFormat::Markdown => Ok(formatters::format_papers_markdown(&papers)),
+            ResponseFormat::Markdown => {
+                let mut output = formatters::format_papers_markdown(&papers);
+                if !not_found.is_empty() {
+                    output.push_str(&format!(
+                        "\n\n---\n\n**Not found ({}):** {}\n",
+                        not_found.len(),
+                        not_found.join(", ")
+                    ));
+                }
+                Ok(output)
+            }
             ResponseFormat::Json => {
                 let compact = papers.iter().map(formatters::compact_paper).collect::<Vec<_>>();
-                Ok(serde_json::to_string_pretty(&compact)?)
+                Ok(serde_json::to_string_pretty(&json!({
+                    "found": compact,
+                    "not_found": not_found
+                }))?)
             }
         }
     }
@@ -117,7 +140,7 @@ impl McpTool for AuthorSearchTool {
 
         let result = ctx
             .client
-            .search_authors(&params.query, 0, params.limit)
+            .search_authors(&params.query, 0, params.limit, fields::AUTHOR)
             .await
             .map_err(ToolError::from)?;
 
@@ -182,24 +205,11 @@ impl McpTool for AuthorPapersTool {
         // Get author info first
         let author = ctx.client.get_author(&params.author_id).await.map_err(ToolError::from)?;
 
-        // Search papers by author
+        // Fetch papers using the dedicated /author/{id}/papers endpoint
         let mut all_papers = Vec::new();
         let mut offset = 0;
         let limit = 100;
         let max_results = params.limit;
-
-        // Build filter parameters
-        let mut filters: Vec<(String, String)> = Vec::new();
-
-        if let Some(min_year) = params.year_start {
-            if let Some(max_year) = params.year_end {
-                filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
-            } else {
-                filters.push(("year".to_string(), format!("{}-", min_year)));
-            }
-        } else if let Some(max_year) = params.year_end {
-            filters.push(("year".to_string(), format!("-{}", max_year)));
-        }
 
         loop {
             if all_papers.len() as i32 >= max_results {
@@ -208,17 +218,23 @@ impl McpTool for AuthorPapersTool {
 
             let result = ctx
                 .client
-                .search_papers(
-                    &format!("author:{}", params.author_id),
-                    offset,
-                    limit,
-                    fields::DEFAULT,
-                    &filters,
-                )
+                .get_author_papers(&params.author_id, offset, limit, fields::DEFAULT)
                 .await
                 .map_err(ToolError::from)?;
 
             for paper in result.data {
+                // Apply client-side year filters
+                if let Some(min_year) = params.year_start {
+                    if paper.year.unwrap_or(0) < min_year {
+                        continue;
+                    }
+                }
+                if let Some(max_year) = params.year_end {
+                    if paper.year.unwrap_or(i32::MAX) > max_year {
+                        continue;
+                    }
+                }
+
                 all_papers.push(paper);
 
                 if all_papers.len() as i32 >= max_results {
@@ -302,15 +318,27 @@ impl McpTool for PaperAutocompleteTool {
         let matches =
             ctx.client.autocomplete_papers(&params.query).await.map_err(ToolError::from)?;
 
+        if matches.is_empty() {
+            return Ok(format!(
+                "# Paper Autocomplete\n\n**Query:** `{}`\n\nNo suggestions found.",
+                params.query
+            ));
+        }
+
+        // Enrich with paper details since autocomplete only returns IDs
+        let ids: Vec<String> = matches.iter().map(|m| m.id.clone()).collect();
+        let papers = ctx
+            .client
+            .get_papers_batch(&ids, fields::MINIMAL)
+            .await
+            .unwrap_or_default();
+
+        // Build a lookup map for enrichment
+        let paper_map: std::collections::HashMap<&str, &crate::models::Paper> =
+            papers.iter().map(|p| (p.paper_id.as_str(), p)).collect();
+
         match params.response_format {
             ResponseFormat::Markdown => {
-                if matches.is_empty() {
-                    return Ok(format!(
-                        "# Paper Autocomplete\n\n**Query:** `{}`\n\nNo suggestions found.",
-                        params.query
-                    ));
-                }
-
                 let mut output = format!(
                     "# Paper Autocomplete\n\n**Query:** `{}`\n**Suggestions:** {}\n\n---\n\n",
                     params.query,
@@ -318,17 +346,37 @@ impl McpTool for PaperAutocompleteTool {
                 );
 
                 for (i, m) in matches.iter().enumerate() {
-                    let title = m.match_.as_deref().unwrap_or("Unknown");
-                    output.push_str(&format!("{}. **{}**\n   - ID: `{}`\n\n", i + 1, title, m.id));
+                    let title = paper_map
+                        .get(m.id.as_str())
+                        .and_then(|p| p.title.as_deref())
+                        .or(m.match_.as_deref())
+                        .unwrap_or("Unknown");
+                    let year = paper_map
+                        .get(m.id.as_str())
+                        .and_then(|p| p.year)
+                        .map(|y| format!(" ({})", y))
+                        .unwrap_or_default();
+                    output.push_str(&format!(
+                        "{}. **{}**{}\n   - ID: `{}`\n\n",
+                        i + 1,
+                        title,
+                        year,
+                        m.id
+                    ));
                 }
                 Ok(output)
             }
             ResponseFormat::Json => Ok(serde_json::to_string_pretty(&json!({
                 "query": params.query,
-                "suggestions": matches.iter().map(|m| json!({
-                    "id": m.id,
-                    "title": m.match_
-                })).collect::<Vec<_>>()
+                "suggestions": matches.iter().map(|m| {
+                    let paper = paper_map.get(m.id.as_str());
+                    json!({
+                        "id": m.id,
+                        "title": paper.and_then(|p| p.title.as_deref()).or(m.match_.as_deref()),
+                        "year": paper.and_then(|p| p.year),
+                        "citations": paper.map(|p| p.citations())
+                    })
+                }).collect::<Vec<_>>()
             }))?),
         }
     }

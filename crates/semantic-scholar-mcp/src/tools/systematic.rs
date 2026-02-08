@@ -313,25 +313,25 @@ impl McpTool for PrismaFlowDiagramTool {
                 "screening": {
                     "type": "object",
                     "properties": {
-                        "records_after_dedup": {"type": "integer"},
-                        "records_screened": {"type": "integer"},
-                        "records_excluded": {"type": "integer"}
+                        "recordsAfterDedup": {"type": "integer"},
+                        "recordsScreened": {"type": "integer"},
+                        "recordsExcluded": {"type": "integer"}
                     },
-                    "required": ["records_after_dedup", "records_screened", "records_excluded"]
+                    "required": ["recordsAfterDedup", "recordsScreened", "recordsExcluded"]
                 },
                 "eligibility": {
                     "type": "object",
                     "properties": {
-                        "reports_sought": {"type": "integer"},
-                        "reports_assessed": {"type": "integer"},
-                        "reports_excluded": {"type": "integer"}
+                        "reportsSought": {"type": "integer"},
+                        "reportsAssessed": {"type": "integer"},
+                        "reportsExcluded": {"type": "integer"}
                     }
                 },
                 "included": {
                     "type": "object",
                     "properties": {
-                        "studies_included": {"type": "integer"},
-                        "reports_included": {"type": "integer"}
+                        "studiesIncluded": {"type": "integer"},
+                        "reportsIncluded": {"type": "integer"}
                     }
                 },
                 "responseFormat": {

@@ -156,6 +156,22 @@ impl SemanticScholarClient {
         paper_ids: &[String],
         fields: &[&str],
     ) -> ClientResult<Vec<Paper>> {
+        let results = self.get_papers_batch_with_nulls(paper_ids, fields).await?;
+        Ok(results.into_iter().flatten().collect())
+    }
+
+    /// Get multiple papers by ID, preserving null positions for unfound IDs.
+    ///
+    /// Returns `None` for IDs that the API could not resolve (invalid or unknown).
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn get_papers_batch_with_nulls(
+        &self,
+        paper_ids: &[String],
+        fields: &[&str],
+    ) -> ClientResult<Vec<Option<Paper>>> {
         let url = format!("{}/paper/batch", self.graph_api_url);
         let params = vec![("fields".to_string(), fields.join(","))];
 
@@ -163,9 +179,7 @@ impl SemanticScholarClient {
             "ids": paper_ids
         });
 
-        // API returns [Paper, null, Paper] for invalid IDs - filter nulls
-        let results: Vec<Option<Paper>> = self.post(&url, &params, &body).await?;
-        Ok(results.into_iter().flatten().collect())
+        self.post(&url, &params, &body).await
     }
 
     /// Search for authors.
@@ -178,6 +192,7 @@ impl SemanticScholarClient {
         query: &str,
         offset: i32,
         limit: i32,
+        fields: &[&str],
     ) -> ClientResult<AuthorSearchResult> {
         let url = format!("{}/author/search", self.graph_api_url);
 
@@ -185,6 +200,7 @@ impl SemanticScholarClient {
             ("query".to_string(), query.to_string()),
             ("offset".to_string(), offset.to_string()),
             ("limit".to_string(), limit.to_string()),
+            ("fields".to_string(), fields.join(",")),
         ];
 
         self.get(&url, &params).await
@@ -198,6 +214,32 @@ impl SemanticScholarClient {
     pub async fn get_author(&self, author_id: &str) -> ClientResult<Author> {
         let url = format!("{}/author/{}", self.graph_api_url, author_id);
         let params: Vec<(String, String)> = vec![];
+
+        self.get(&url, &params).await
+    }
+
+    /// Get papers by a specific author using the dedicated endpoint.
+    ///
+    /// Uses `/author/{author_id}/papers` which guarantees correct results
+    /// (unlike the search API with `author:ID` queries).
+    ///
+    /// # Errors
+    ///
+    /// Returns error on API failure.
+    pub async fn get_author_papers(
+        &self,
+        author_id: &str,
+        offset: i32,
+        limit: i32,
+        fields: &[&str],
+    ) -> ClientResult<SearchResult> {
+        let url = format!("{}/author/{}/papers", self.graph_api_url, author_id);
+
+        let params = vec![
+            ("offset".to_string(), offset.to_string()),
+            ("limit".to_string(), limit.to_string()),
+            ("fields".to_string(), fields.join(",")),
+        ];
 
         self.get(&url, &params).await
     }
@@ -385,6 +427,10 @@ impl SemanticScholarClient {
 
     /// Search for a paper by exact title match.
     ///
+    /// The `/paper/search/match` endpoint may return a direct `Paper` object
+    /// or a `{"data": [...]}` wrapper depending on API version.
+    /// This method handles both formats gracefully.
+    ///
     /// # Errors
     ///
     /// Returns error on API failure.
@@ -399,11 +445,29 @@ impl SemanticScholarClient {
             ("fields".to_string(), fields.join(",")),
         ];
 
-        match self.get(&url, &params).await {
-            Ok(paper) => Ok(Some(paper)),
-            Err(ClientError::NotFound { .. }) => Ok(None),
-            Err(e) => Err(e),
+        let value: serde_json::Value = match self.get(&url, &params).await {
+            Ok(v) => v,
+            Err(ClientError::NotFound { .. }) => return Ok(None),
+            Err(e) => return Err(e),
+        };
+
+        // Try direct Paper object (original API format)
+        if let Ok(paper) = serde_json::from_value::<Paper>(value.clone()) {
+            if !paper.paper_id.is_empty() {
+                return Ok(Some(paper));
+            }
         }
+
+        // Try {"data": [Paper, ...]} wrapper format
+        if let Some(data) = value.get("data").and_then(|d| d.as_array()) {
+            if let Some(first) = data.first() {
+                if let Ok(paper) = serde_json::from_value::<Paper>(first.clone()) {
+                    return Ok(Some(paper));
+                }
+            }
+        }
+
+        Ok(None)
     }
 
     /// Get detailed author information for a paper.

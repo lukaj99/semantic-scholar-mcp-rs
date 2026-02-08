@@ -157,30 +157,36 @@ impl McpTool for FieldWeightedImpactTool {
     }
 }
 
-async fn get_field_baseline(ctx: &ToolContext, _field: &str, year: i32, sample_size: i32) -> f64 {
-    // Search for papers in this field-year to estimate baseline
+async fn get_field_baseline(ctx: &ToolContext, field: &str, year: i32, sample_size: i32) -> f64 {
+    // Use bulk search with year filter and citation sorting for a representative sample
+    let filters = vec![("year".to_string(), format!("{}-{}", year, year))];
+
     let result = ctx
         .client
-        .search_papers(&format!("year:{}", year), 0, sample_size, &["citationCount"], &[])
+        .search_papers_bulk(
+            field,
+            None,
+            &["citationCount"],
+            Some("citationCount:desc"),
+            &filters,
+        )
         .await;
 
     match result {
         Ok(search_result) => {
-            let citations: Vec<i32> = search_result.data.iter().map(|p| p.citations()).collect();
+            let citations: Vec<i32> = search_result
+                .data
+                .iter()
+                .take(sample_size as usize)
+                .map(|p| p.citations())
+                .collect();
             if citations.is_empty() {
                 1.0
             } else {
-                // Calculate median
-                let mut sorted = citations;
-                sorted.sort_unstable();
-                let len = sorted.len();
-                if len == 1 {
-                    sorted[0] as f64
-                } else if len % 2 == 0 {
-                    (sorted[len / 2 - 1] + sorted[len / 2]) as f64 / 2.0
-                } else {
-                    sorted[len / 2] as f64
-                }
+                // Calculate mean (papers are sorted desc, so mean is representative)
+                let sum: i64 = citations.iter().map(|&c| c as i64).sum();
+                let mean = sum as f64 / citations.len() as f64;
+                mean.max(1.0)
             }
         }
         Err(_) => 1.0,
@@ -315,21 +321,33 @@ impl McpTool for HighlyCitedPapersTool {
 
 async fn get_percentile_threshold(
     ctx: &ToolContext,
-    _field: &str,
+    field: &str,
     year: i32,
     percentile: f64,
 ) -> i32 {
-    let result =
-        ctx.client.search_papers(&format!("year:{}", year), 0, 500, &["citationCount"], &[]).await;
+    // Use bulk search sorted by citations desc with proper year filter
+    let filters = vec![("year".to_string(), format!("{}-{}", year, year))];
+
+    let result = ctx
+        .client
+        .search_papers_bulk(
+            field,
+            None,
+            &["citationCount"],
+            Some("citationCount:desc"),
+            &filters,
+        )
+        .await;
 
     match result {
         Ok(search_result) => {
-            let mut cites: Vec<i32> = search_result.data.iter().map(|p| p.citations()).collect();
-            cites.sort_by(|a, b| b.cmp(a));
+            // Papers are already sorted by citations desc from bulk API
+            let cites: Vec<i32> = search_result.data.iter().map(|p| p.citations()).collect();
             if cites.is_empty() {
                 0
             } else {
-                let threshold_idx = ((cites.len() as f64 * percentile / 100.0) as usize).max(1) - 1;
+                let threshold_idx =
+                    ((cites.len() as f64 * percentile / 100.0) as usize).max(1) - 1;
                 cites.get(threshold_idx).copied().unwrap_or(0)
             }
         }
