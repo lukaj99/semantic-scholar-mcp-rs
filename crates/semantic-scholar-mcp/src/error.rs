@@ -2,6 +2,7 @@
 //!
 //! Uses `thiserror` for structured error handling with automatic `From` implementations.
 
+use std::error::Error;
 use std::time::Duration;
 
 /// Errors from the HTTP client layer.
@@ -90,8 +91,20 @@ impl ClientError {
 
     /// Returns true if this error is retryable.
     #[must_use]
-    pub const fn is_retryable(&self) -> bool {
-        matches!(self, Self::RateLimited { .. } | Self::Timeout(_) | Self::Server { .. })
+    pub fn is_retryable(&self) -> bool {
+        match self {
+            Self::RateLimited { .. } | Self::Timeout(_) | Self::Server { .. } => true,
+            Self::Middleware(e) => {
+                // reqwest-retry wraps transport errors (timeouts, connection resets)
+                // as Middleware errors — check the inner reqwest error
+                if let Some(reqwest_err) = e.source().and_then(|s| s.downcast_ref::<reqwest::Error>()) {
+                    reqwest_err.is_timeout() || reqwest_err.is_connect()
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
     }
 
     /// Get the retry-after duration if this is a rate limit error.

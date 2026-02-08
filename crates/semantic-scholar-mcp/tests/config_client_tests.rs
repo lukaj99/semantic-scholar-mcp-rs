@@ -23,6 +23,21 @@ fn test_config_with_api_key() {
 }
 
 #[test]
+fn test_config_with_auth_token() {
+    let config = Config::new(None, Some("my-token".to_string()));
+    assert!(!config.has_api_key());
+    assert_eq!(config.auth_token.as_deref(), Some("my-token"));
+}
+
+#[test]
+fn test_config_with_both_keys() {
+    let config = Config::new(Some("api-key".to_string()), Some("auth-token".to_string()));
+    assert!(config.has_api_key());
+    assert_eq!(config.api_key.as_deref(), Some("api-key"));
+    assert_eq!(config.auth_token.as_deref(), Some("auth-token"));
+}
+
+#[test]
 fn test_config_clone_preserves_api_key() {
     let config = Config::new(Some("secret".to_string()), None);
     let cloned = config.clone();

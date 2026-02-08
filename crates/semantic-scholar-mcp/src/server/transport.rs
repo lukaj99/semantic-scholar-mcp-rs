@@ -438,7 +438,13 @@ async fn build_sse_stream_with_endpoint(
     let receiver = session.subscribe();
     let live_stream = BroadcastStream::new(receiver).filter_map(
         |result: Result<super::session::BufferedEvent, _>| async move {
-            result.ok().map(|event| Ok(event.to_sse_event()))
+            match result {
+                Ok(event) => Some(Ok(event.to_sse_event())),
+                Err(e) => {
+                    tracing::debug!(error = %e, "Broadcast lag, client will catch up");
+                    None
+                }
+            }
         },
     );
 

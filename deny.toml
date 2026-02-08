@@ -10,11 +10,7 @@ no-default-features = false
 # This section is considered when running `cargo deny check advisories`
 [advisories]
 # A list of advisory IDs to ignore
-ignore = [
-    # instant crate is unmaintained but is a transitive dependency of reqwest-retry
-    # via parking_lot v0.11.2. No safe upgrade path currently available.
-    { id = "RUSTSEC-2024-0384", reason = "transitive dep from reqwest-retry, awaiting upstream fix" },
-]
+ignore = []
 
 # This section is considered when running `cargo deny check licenses`
 [licenses]

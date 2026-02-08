@@ -44,7 +44,7 @@ fn create_client() -> Arc<SemanticScholarClient> {
 async fn test_search_papers_basic() {
     let client = create_client();
     let result = client
-        .search_papers("transformer attention", 0, 10, fields::DEFAULT)
+        .search_papers("transformer attention", 0, 10, fields::DEFAULT, &[])
         .await
         .expect("Search should succeed");
 
@@ -56,7 +56,7 @@ async fn test_search_papers_basic() {
 async fn test_search_papers_empty_query() {
     let client = create_client();
     // Very random query should return 0 or few results
-    let result = client.search_papers("xyznonexistentquery12345", 0, 10, fields::DEFAULT).await;
+    let result = client.search_papers("xyznonexistentquery12345", 0, 10, fields::DEFAULT, &[]).await;
 
     // Either returns empty results or a parsing error is acceptable
     match result {
@@ -69,7 +69,7 @@ async fn test_search_papers_empty_query() {
 async fn test_search_papers_special_characters() {
     let client = create_client();
     // Query with special characters
-    let result = client.search_papers("C++ memory management", 0, 10, fields::DEFAULT).await;
+    let result = client.search_papers("C++ memory management", 0, 10, fields::DEFAULT, &[]).await;
 
     // Might get rate limited or succeed
     match result {
@@ -227,7 +227,7 @@ async fn test_get_author() {
 async fn test_pagination_bounds() {
     let client = create_client();
     // Request with very high offset
-    let result = client.search_papers("machine learning", 10000, 10, fields::DEFAULT).await;
+    let result = client.search_papers("machine learning", 10000, 10, fields::DEFAULT, &[]).await;
 
     // Should either succeed with empty results or return gracefully
     assert!(result.is_ok() || result.is_err(), "Should handle high offset");
@@ -237,7 +237,7 @@ async fn test_pagination_bounds() {
 async fn test_zero_citation_paper() {
     let client = create_client();
     // Search for a recent paper that might have 0 citations
-    let result = client.search_papers("preprint 2024", 0, 100, fields::DEFAULT).await;
+    let result = client.search_papers("preprint 2024", 0, 100, fields::DEFAULT, &[]).await;
 
     match result {
         Ok(search_result) => {
