@@ -10,7 +10,7 @@ use crate::config::fields;
 use crate::error::{ToolError, ToolResult};
 use crate::formatters;
 use crate::models::{
-    BibliographicCouplingInput, CitationHalfLifeInput, CocitationAnalysisInput,
+    BibliographicCouplingInput, BulkSearchResult, CitationHalfLifeInput, CocitationAnalysisInput,
     FieldWeightedImpactInput, HighlyCitedPapersInput, HotPapersInput, ResponseFormat,
 };
 
@@ -37,7 +37,7 @@ impl McpTool for FieldWeightedImpactTool {
                     "items": {"type": "string"},
                     "description": "Paper IDs to analyze"
                 },
-                "baseline_sample_size": {
+                "baselineSampleSize": {
                     "type": "integer",
                     "default": 100
                 },
@@ -157,40 +157,49 @@ impl McpTool for FieldWeightedImpactTool {
     }
 }
 
-async fn get_field_baseline(ctx: &ToolContext, field: &str, year: i32, sample_size: i32) -> f64 {
-    // Use bulk search with year filter and citation sorting for a representative sample
-    let filters = vec![("year".to_string(), format!("{}-{}", year, year))];
-
-    let result = ctx
-        .client
-        .search_papers_bulk(
-            field,
-            None,
-            &["citationCount"],
-            Some("citationCount:desc"),
-            &filters,
-        )
-        .await;
-
-    match result {
-        Ok(search_result) => {
-            let citations: Vec<i32> = search_result
-                .data
-                .iter()
-                .take(sample_size as usize)
-                .map(|p| p.citations())
-                .collect();
-            if citations.is_empty() {
-                1.0
-            } else {
-                // Calculate mean (papers are sorted desc, so mean is representative)
-                let sum: i64 = citations.iter().map(|&c| c as i64).sum();
-                let mean = sum as f64 / citations.len() as f64;
-                mean.max(1.0)
-            }
+/// Fetch papers for a field+year combination via bulk search.
+async fn fetch_field_year_citations(
+    ctx: &ToolContext,
+    field: &str,
+    year: i32,
+    sort: Option<&str>,
+) -> Option<BulkSearchResult> {
+    let filters = vec![("year".to_string(), format!("{year}-{year}"))];
+    match ctx.client.search_papers_bulk(field, None, &["citationCount"], sort, &filters).await {
+        Ok(result) => Some(result),
+        Err(e) => {
+            tracing::warn!(error = %e, field, year, "Bulk search for field/year citations failed");
+            None
         }
-        Err(_) => 1.0,
     }
+}
+
+/// Estimate baseline citation count for a field+year using median of a representative sample.
+async fn get_field_baseline(ctx: &ToolContext, field: &str, year: i32, sample_size: i32) -> f64 {
+    let Some(search_result) = fetch_field_year_citations(ctx, field, year, None).await else {
+        return 1.0;
+    };
+
+    let mut citations: Vec<i32> = search_result
+        .data
+        .iter()
+        .take(sample_size as usize)
+        .map(|p| p.citations())
+        .collect();
+
+    if citations.is_empty() {
+        return 1.0;
+    }
+
+    // Use median for outlier robustness
+    citations.sort_unstable();
+    let mid = citations.len() / 2;
+    let median = if citations.len().is_multiple_of(2) {
+        f64::midpoint(citations[mid - 1] as f64, citations[mid] as f64)
+    } else {
+        citations[mid] as f64
+    };
+    median.max(1.0)
 }
 
 /// Highly cited papers detection tool.
@@ -319,40 +328,37 @@ impl McpTool for HighlyCitedPapersTool {
     }
 }
 
+/// Estimate the citation threshold for the top `percentile`% of a field+year.
+///
+/// Uses `search_result.total` (the full population size) to compute the target rank,
+/// then reads the citation count at that rank from the desc-sorted batch. This is
+/// approximate: if the target rank exceeds the batch size, we return 0.
 async fn get_percentile_threshold(
     ctx: &ToolContext,
     field: &str,
     year: i32,
     percentile: f64,
 ) -> i32 {
-    // Use bulk search sorted by citations desc with proper year filter
-    let filters = vec![("year".to_string(), format!("{}-{}", year, year))];
+    let Some(search_result) =
+        fetch_field_year_citations(ctx, field, year, Some("citationCount:desc")).await
+    else {
+        return 0;
+    };
 
-    let result = ctx
-        .client
-        .search_papers_bulk(
-            field,
-            None,
-            &["citationCount"],
-            Some("citationCount:desc"),
-            &filters,
-        )
-        .await;
-
-    match result {
-        Ok(search_result) => {
-            // Papers are already sorted by citations desc from bulk API
-            let cites: Vec<i32> = search_result.data.iter().map(|p| p.citations()).collect();
-            if cites.is_empty() {
-                0
-            } else {
-                let threshold_idx =
-                    ((cites.len() as f64 * percentile / 100.0) as usize).max(1) - 1;
-                cites.get(threshold_idx).copied().unwrap_or(0)
-            }
-        }
-        Err(_) => 0,
+    let cites: Vec<i32> = search_result.data.iter().map(|p| p.citations()).collect();
+    if cites.is_empty() {
+        return 0;
     }
+
+    let total = search_result.total as usize;
+    let target_rank = ((total as f64 * percentile / 100.0) as usize).max(1) - 1;
+
+    // If the target rank exceeds our batch, we can't determine the threshold
+    if target_rank >= cites.len() {
+        return 0;
+    }
+
+    cites[target_rank]
 }
 
 /// Citation half-life calculator.

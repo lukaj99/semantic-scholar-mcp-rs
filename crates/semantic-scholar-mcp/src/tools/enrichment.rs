@@ -66,7 +66,6 @@ impl McpTool for BatchMetadataTool {
             .await
             .map_err(ToolError::from)?;
 
-        // Identify which IDs were not found
         let mut not_found: Vec<&str> = Vec::new();
         let mut papers = Vec::new();
         for (id, result) in params.paper_ids.iter().zip(all_results.iter()) {
@@ -325,15 +324,16 @@ impl McpTool for PaperAutocompleteTool {
             ));
         }
 
-        // Enrich with paper details since autocomplete only returns IDs
+        // Enrich with paper details since autocomplete only returns ID and match text
         let ids: Vec<String> = matches.iter().map(|m| m.id.clone()).collect();
-        let papers = ctx
-            .client
-            .get_papers_batch(&ids, fields::MINIMAL)
-            .await
-            .unwrap_or_default();
+        let papers = match ctx.client.get_papers_batch(&ids, fields::MINIMAL).await {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::warn!(error = %e, "Autocomplete enrichment failed, showing basic results");
+                Vec::new()
+            }
+        };
 
-        // Build a lookup map for enrichment
         let paper_map: std::collections::HashMap<&str, &crate::models::Paper> =
             papers.iter().map(|p| (p.paper_id.as_str(), p)).collect();
 
@@ -346,13 +346,12 @@ impl McpTool for PaperAutocompleteTool {
                 );
 
                 for (i, m) in matches.iter().enumerate() {
-                    let title = paper_map
-                        .get(m.id.as_str())
+                    let enriched = paper_map.get(m.id.as_str());
+                    let title = enriched
                         .and_then(|p| p.title.as_deref())
                         .or(m.match_.as_deref())
                         .unwrap_or("Unknown");
-                    let year = paper_map
-                        .get(m.id.as_str())
+                    let year = enriched
                         .and_then(|p| p.year)
                         .map(|y| format!(" ({})", y))
                         .unwrap_or_default();

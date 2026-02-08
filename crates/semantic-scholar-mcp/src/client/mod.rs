@@ -162,7 +162,8 @@ impl SemanticScholarClient {
 
     /// Get multiple papers by ID, preserving null positions for unfound IDs.
     ///
-    /// Returns `None` for IDs that the API could not resolve (invalid or unknown).
+    /// The returned `Vec` has the same length and order as `paper_ids`:
+    /// position `i` corresponds to `paper_ids[i]`, with `None` for unresolvable IDs.
     ///
     /// # Errors
     ///
@@ -451,19 +452,19 @@ impl SemanticScholarClient {
             Err(e) => return Err(e),
         };
 
-        // Try direct Paper object (original API format)
-        if let Ok(paper) = serde_json::from_value::<Paper>(value.clone()) {
-            if !paper.paper_id.is_empty() {
-                return Ok(Some(paper));
-            }
-        }
-
-        // Try {"data": [Paper, ...]} wrapper format
+        // Try {"data": [Paper, ...]} wrapper format first (borrows via .get())
         if let Some(data) = value.get("data").and_then(|d| d.as_array()) {
             if let Some(first) = data.first() {
                 if let Ok(paper) = serde_json::from_value::<Paper>(first.clone()) {
                     return Ok(Some(paper));
                 }
+            }
+        }
+
+        // Try direct Paper object (consumes value, no clone needed)
+        if let Ok(paper) = serde_json::from_value::<Paper>(value) {
+            if !paper.paper_id.is_empty() {
+                return Ok(Some(paper));
             }
         }
 

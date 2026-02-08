@@ -428,8 +428,9 @@ async fn test_author_papers_with_year_filter() {
 
     assert!(result.contains("Filtered Author"));
     assert!(result.contains("Target Paper"));
-    // The tool applies client-side year filtering via the dedicated /author/{id}/papers endpoint.
-    // p1 (2019) and p3 (2025) should be filtered out by yearStart/yearEnd.
+    // p1 (2019) and p3 (2025) should be filtered out by yearStart=2020/yearEnd=2024
+    assert!(!result.contains("Old Paper"));
+    assert!(!result.contains("Future Paper"));
 }
 
 // =============================================================================
@@ -497,6 +498,69 @@ fn test_author_papers_tool_input_schema() {
         schema["properties"]["authorId"].is_object()
             || schema["properties"]["author_id"].is_object()
     );
+}
+
+// =============================================================================
+// PaperTitleMatch — data wrapper format
+// =============================================================================
+
+#[tokio::test]
+async fn test_paper_title_match_data_wrapper() {
+    let mock_server = MockServer::start().await;
+
+    // API returns {"data": [Paper]} wrapper format
+    Mock::given(method("GET"))
+        .and(path("/graph/v1/paper/search/match"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [sample_paper("p1", "Wrapped Paper", 2023, 42)]
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server);
+    let tool = PaperTitleMatchTool;
+
+    let result = tool.execute(&ctx, json!({"title": "Wrapped Paper"})).await.unwrap();
+
+    assert!(result.contains("Wrapped Paper"));
+}
+
+// =============================================================================
+// BatchMetadata — mixed found/not-found
+// =============================================================================
+
+#[tokio::test]
+async fn test_batch_metadata_partial_not_found() {
+    let mock_server = MockServer::start().await;
+
+    // API returns [Paper, null, Paper] for batch with invalid ID
+    Mock::given(method("POST"))
+        .and(path("/graph/v1/paper/batch"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            sample_paper("p1", "Found Paper One", 2023, 100),
+            null,
+            sample_paper("p3", "Found Paper Three", 2022, 50)
+        ])))
+        .mount(&mock_server)
+        .await;
+
+    let ctx = setup_test_context(&mock_server);
+    let tool = BatchMetadataTool;
+
+    let result = tool
+        .execute(
+            &ctx,
+            json!({
+                "paperIds": ["p1", "INVALID_ID", "p3"]
+            }),
+        )
+        .await
+        .unwrap();
+
+    assert!(result.contains("Found Paper One"));
+    assert!(result.contains("Found Paper Three"));
+    assert!(result.contains("Not found (1)"));
+    assert!(result.contains("INVALID_ID"));
 }
 
 // =============================================================================

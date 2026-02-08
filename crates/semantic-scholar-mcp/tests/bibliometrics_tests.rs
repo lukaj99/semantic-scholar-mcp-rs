@@ -52,6 +52,14 @@ fn search_result(papers: Vec<serde_json::Value>) -> serde_json::Value {
     })
 }
 
+fn bulk_search_result(papers: Vec<serde_json::Value>) -> serde_json::Value {
+    json!({
+        "total": papers.len(),
+        "token": null,
+        "data": papers
+    })
+}
+
 // =============================================================================
 // FieldWeightedImpactTool Tests
 // =============================================================================
@@ -72,10 +80,10 @@ async fn test_fwci_json_format() {
         .mount(&mock_server)
         .await;
 
-    // Mock baseline search
+    // Mock baseline search (bulk endpoint)
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(vec![
             json!({"paperId": "b1", "citationCount": 50}),
             json!({"paperId": "b2", "citationCount": 30}),
             json!({"paperId": "b3", "citationCount": 20}),
@@ -173,8 +181,8 @@ async fn test_highly_cited_json_format() {
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(vec![
             json!({"paperId": "b1", "citationCount": 100}),
             json!({"paperId": "b2", "citationCount": 50}),
         ])))
@@ -209,8 +217,8 @@ async fn test_highly_cited_custom_percentile() {
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
+        .and(path("/graph/v1/paper/search/bulk"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(bulk_search_result(vec![
             json!({"paperId": "b1", "citationCount": 100}),
             json!({"paperId": "b2", "citationCount": 80}),
             json!({"paperId": "b3", "citationCount": 60}),
@@ -222,7 +230,7 @@ async fn test_highly_cited_custom_percentile() {
     let tool = HighlyCitedPapersTool;
 
     let result =
-        tool.execute(&ctx, json!({"paperIds": ["p1"], "percentile_threshold": 5.0})).await.unwrap();
+        tool.execute(&ctx, json!({"paperIds": ["p1"], "percentileThreshold": 5.0})).await.unwrap();
 
     assert!(result.contains("Highly Cited") || result.contains("Top"));
 }
