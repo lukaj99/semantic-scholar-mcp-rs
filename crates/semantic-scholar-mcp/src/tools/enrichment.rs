@@ -235,10 +235,7 @@ impl McpTool for AuthorPapersTool {
         match params.response_format {
             ResponseFormat::Markdown => {
                 let mut output = formatters::format_author_markdown(&author);
-                output.push_str(&format!(
-                    "\n\n## Papers ({} found)\n\n",
-                    all_papers.len()
-                ));
+                output.push_str(&format!("\n\n## Papers ({} found)\n\n", all_papers.len()));
 
                 if params.year_start.is_some() || params.year_end.is_some() {
                     output.push_str(&format!(
@@ -255,7 +252,8 @@ impl McpTool for AuthorPapersTool {
                 Ok(output)
             }
             ResponseFormat::Json => {
-                let compact_papers: Vec<_> = all_papers.iter().map(formatters::compact_paper).collect();
+                let compact_papers: Vec<_> =
+                    all_papers.iter().map(formatters::compact_paper).collect();
                 Ok(serde_json::to_string_pretty(&json!({
                     "author": formatters::compact_author(&author),
                     "papers": compact_papers,

@@ -56,7 +56,8 @@ async fn test_search_papers_basic() {
 async fn test_search_papers_empty_query() {
     let client = create_client();
     // Very random query should return 0 or few results
-    let result = client.search_papers("xyznonexistentquery12345", 0, 10, fields::DEFAULT, &[]).await;
+    let result =
+        client.search_papers("xyznonexistentquery12345", 0, 10, fields::DEFAULT, &[]).await;
 
     // Either returns empty results or a parsing error is acceptable
     match result {

@@ -6,15 +6,15 @@ use semantic_scholar_mcp::models::Paper;
 /// Generate arbitrary Paper structs for testing.
 fn arb_paper() -> impl Strategy<Value = Paper> {
     (
-        "[a-f0-9]{40}",                              // paper_id (SHA-like)
-        proptest::option::of("[A-Za-z0-9 ]{1,100}"), // title
+        "[a-f0-9]{40}",                                // paper_id (SHA-like)
+        proptest::option::of("[A-Za-z0-9 ]{1,100}"),   // title
         proptest::option::of("[A-Za-z0-9 .,]{0,500}"), // abstract
-        proptest::option::of(1900i32..2030),         // year
-        proptest::option::of(0i32..1_000_000),       // citation_count
-        proptest::option::of(0i32..10_000),          // reference_count
+        proptest::option::of(1900i32..2030),           // year
+        proptest::option::of(0i32..1_000_000),         // citation_count
+        proptest::option::of(0i32..10_000),            // reference_count
     )
-        .prop_map(
-            |(paper_id, title, r#abstract, year, citation_count, reference_count)| Paper {
+        .prop_map(|(paper_id, title, r#abstract, year, citation_count, reference_count)| {
+            Paper {
                 paper_id,
                 title,
                 r#abstract,
@@ -22,8 +22,8 @@ fn arb_paper() -> impl Strategy<Value = Paper> {
                 citation_count,
                 reference_count,
                 ..Default::default()
-            },
-        )
+            }
+        })
 }
 
 proptest! {

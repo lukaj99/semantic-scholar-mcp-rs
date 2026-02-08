@@ -426,8 +426,8 @@ async fn test_author_papers_with_year_filter() {
 
     assert!(result.contains("Filtered Author"));
     assert!(result.contains("Target Paper"));
-    // Note: Mocks return all papers, filtering happens in the tool logic. 
-    // Since we mock the search response, we return a mix. 
+    // Note: Mocks return all papers, filtering happens in the tool logic.
+    // Since we mock the search response, we return a mix.
     // The tool should filter out p1 (2019) and p3 (2025) if logic is correct.
     // However, the test just checks if it works without erroring.
     // Let's verify filtering if possible, but the string check might be tricky if the format includes filtered counts.

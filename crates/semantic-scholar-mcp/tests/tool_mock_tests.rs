@@ -88,9 +88,7 @@ async fn test_exhaustive_search_with_year_filter() {
         .and(path("/graph/v1/paper/search"))
         .and(query_param("year", "2024-"))
         .respond_with(ResponseTemplate::new(200).set_body_json(sample_search_result(
-            vec![
-                sample_paper_json("paper2", "New Paper", 2024, 50),
-            ],
+            vec![sample_paper_json("paper2", "New Paper", 2024, 50)],
             None,
         )))
         .mount(&mock_server)
@@ -115,9 +113,7 @@ async fn test_exhaustive_search_with_citation_filter() {
         .and(path("/graph/v1/paper/search"))
         .and(query_param("minCitationCount", "100"))
         .respond_with(ResponseTemplate::new(200).set_body_json(sample_search_result(
-            vec![
-                sample_paper_json("paper1", "Popular Paper", 2023, 500),
-            ],
+            vec![sample_paper_json("paper1", "Popular Paper", 2023, 500)],
             None,
         )))
         .mount(&mock_server)

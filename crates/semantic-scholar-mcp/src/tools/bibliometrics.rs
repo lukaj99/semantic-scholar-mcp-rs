@@ -872,7 +872,7 @@ impl McpTool for HotPapersTool {
         // Build filter parameters
         let filters = vec![
             ("year".to_string(), format!("{}-", year_start)),
-            ("minCitationCount".to_string(), params.min_recent_citations.to_string())
+            ("minCitationCount".to_string(), params.min_recent_citations.to_string()),
         ];
 
         loop {

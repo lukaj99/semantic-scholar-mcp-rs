@@ -8,12 +8,12 @@ use semantic_scholar_mcp::models::{
 /// Generate arbitrary ExhaustiveSearchInput.
 fn arb_exhaustive_search() -> impl Strategy<Value = ExhaustiveSearchInput> {
     (
-        "[A-Za-z0-9 ]{1,50}",                   // query
-        proptest::option::of(1900i32..2030),   // year_start
-        proptest::option::of(1900i32..2030),   // year_end
-        proptest::option::of(0i32..1000),      // min_citations
-        any::<bool>(),                         // open_access_only
-        -1i32..1000,                           // max_results
+        "[A-Za-z0-9 ]{1,50}",                // query
+        proptest::option::of(1900i32..2030), // year_start
+        proptest::option::of(1900i32..2030), // year_end
+        proptest::option::of(0i32..1000),    // min_citations
+        any::<bool>(),                       // open_access_only
+        -1i32..1000,                         // max_results
     )
         .prop_map(
             |(query, year_start, year_end, min_citations, open_access_only, max_results)| {

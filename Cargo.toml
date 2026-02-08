@@ -64,6 +64,8 @@ url = "2"
 chrono = { version = "0.4", features = ["serde"] }
 regex = "1"
 uuid = { version = "1", features = ["v4"] }
+sha2 = "0.10"
+base64 = "0.22"
 
 # Dev dependencies
 tokio-test = "0.4"

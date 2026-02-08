@@ -28,6 +28,7 @@ use tokio_stream::wrappers::BroadcastStream;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
+use super::oauth::OAuthStore;
 use super::session::SessionManager;
 use crate::tools::{McpTool, ToolContext};
 
@@ -113,8 +114,10 @@ pub struct HttpState {
     pub sessions: Arc<SessionManager>,
     /// Base URL for endpoint announcements.
     pub base_url: String,
-    /// Authentication token.
+    /// Authentication token (used for both static Bearer and OAuth login password).
     pub auth_token: Option<String>,
+    /// OAuth store (active when auth_token is configured).
+    pub oauth_store: Option<Arc<OAuthStore>>,
 }
 
 /// Create the HTTP router for MCP.
@@ -131,10 +134,18 @@ pub fn create_router(
 
     let base_url = base_url.unwrap_or_else(|| "https://scholar.jovanovic.org.uk".to_string());
 
-    let state = Arc::new(HttpState { tools, ctx, sessions, base_url, auth_token });
+    // Initialize OAuth store when auth is configured
+    let oauth_store = auth_token.as_ref().map(|_| {
+        let store = Arc::new(OAuthStore::new());
+        Arc::clone(&store).start_cleanup_task();
+        tracing::info!("OAuth 2.0 authorization server enabled");
+        store
+    });
 
-    Router::new()
-        .route("/", get(health_check))
+    let state = Arc::new(HttpState { tools, ctx, sessions, base_url, auth_token, oauth_store });
+
+    let mut router = Router::new()
+        .route("/", get(health_check).post(handle_mcp_post))
         .route("/health", get(health_check))
         .route("/ready", get(readiness_check))
         // MCP discovery endpoint for Claude Connector
@@ -145,12 +156,27 @@ pub fn create_router(
         .route("/sse", get(handle_sse_legacy))
         .route("/message", post(handle_message_post))
         // Session management
-        .route("/sessions", get(handle_sessions_list))
+        .route("/sessions", get(handle_sessions_list));
+
+    // OAuth endpoints (only when auth is configured)
+    if state.oauth_store.is_some() {
+        router = router
+            .route(
+                "/.well-known/oauth-protected-resource",
+                get(super::oauth::handlers::handle_protected_resource),
+            )
+            .route(
+                "/.well-known/oauth-authorization-server",
+                get(super::oauth::handlers::handle_auth_server_metadata),
+            )
+            .route("/register", post(super::oauth::handlers::handle_register))
+            .route("/authorize", get(super::oauth::handlers::handle_authorize_get))
+            .route("/token", post(super::oauth::handlers::handle_token));
+    }
+
+    router
         .layer(CorsLayer::permissive())
-        .layer(axum::middleware::from_fn_with_state(
-            Arc::clone(&state),
-            auth_middleware,
-        ))
+        .layer(axum::middleware::from_fn_with_state(Arc::clone(&state), auth_middleware))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -177,19 +203,30 @@ async fn handle_mcp_discovery(
     State(state): State<Arc<HttpState>>,
     Query(query): Query<DiscoveryQuery>,
 ) -> impl IntoResponse {
-    // Use token from query param OR fallback to server's configured token
-    // This allows the manifest to "leak" the token to the client so connection works
-    // even if the client stripped the query param from the manifest URL.
+    // When OAuth is active, advertise clean URLs (OAuth handles auth)
+    // When OAuth is not active, fall back to token-in-URL style
+    if state.oauth_store.is_some() {
+        return Json(serde_json::json!({
+            "name": "semantic-scholar-mcp",
+            "version": env!("CARGO_PKG_VERSION"),
+            "description": "MCP server for Semantic Scholar API - academic paper discovery, citation analysis, and bibliometrics",
+            "capabilities": {
+                "tools": true,
+                "resources": false,
+                "prompts": false
+            },
+            "endpoints": {
+                "mcp": format!("{}/mcp", state.base_url),
+                "sse": format!("{}/sse", state.base_url),
+                "health": format!("{}/health", state.base_url)
+            },
+            "tools_count": state.tools.len()
+        }));
+    }
+
+    // Legacy: token-in-URL for non-OAuth deployments
     let token = query.token.or_else(|| state.auth_token.clone());
-
-    let token_suffix = token
-        .as_deref()
-        .map(|t| format!("?token={}", t))
-        .unwrap_or_default();
-
-    // Always advertise "none" to prevent clients from triggering OAuth flows
-    // Security is enforced by the token in the URL (middleware)
-    let auth_config = serde_json::json!({ "type": "none" });
+    let token_suffix = token.as_deref().map(|t| format!("?token={}", t)).unwrap_or_default();
 
     Json(serde_json::json!({
         "name": "semantic-scholar-mcp",
@@ -200,7 +237,7 @@ async fn handle_mcp_discovery(
             "resources": false,
             "prompts": false
         },
-        "auth": auth_config,
+        "auth": { "type": "none" },
         "endpoints": {
             "mcp": format!("{}/mcp{}", state.base_url, token_suffix),
             "sse": format!("{}/sse{}", state.base_url, token_suffix),
@@ -546,19 +583,34 @@ async fn auth_middleware(
         || path == "/health"
         || path == "/ready"
         || path == "/.well-known/mcp.json"
-        || path == "/sessions" // For debugging, maybe restrict later?
+        || path == "/sessions"
+        // OAuth endpoints must be publicly accessible for the flow to work
+        || path == "/.well-known/oauth-protected-resource"
+        || path == "/.well-known/oauth-authorization-server"
+        || path == "/register"
+        || path == "/authorize"
+        || path == "/token"
     {
         return next.run(request).await;
     }
 
-    // Check Authorization header
+    // Check Authorization header - static token first
     if let Some(auth_header) = headers.get("Authorization") {
         if let Ok(auth_str) = auth_header.to_str() {
             if auth_str.starts_with("Bearer ") {
-                let token = &auth_str[7..];
-                // Constant time comparison would be better, but this is simple enough for now
-                if token == expected_token {
+                let bearer = &auth_str[7..];
+
+                // Check static token
+                if bearer == expected_token {
                     return next.run(request).await;
+                }
+
+                // Check OAuth access token
+                if let Some(ref oauth_store) = state.oauth_store {
+                    if let Some(client_id) = oauth_store.validate_access_token(bearer).await {
+                        tracing::info!(client_id = %client_id, "OAuth token validated");
+                        return next.run(request).await;
+                    }
                 }
             }
         }
@@ -577,5 +629,18 @@ async fn auth_middleware(
         "Authentication failed: missing or invalid token"
     );
 
-    (StatusCode::UNAUTHORIZED, "Unauthorized: Invalid or missing Bearer token").into_response()
+    // Return 401 with WWW-Authenticate header to trigger OAuth discovery
+    let mut response =
+        (StatusCode::UNAUTHORIZED, "Unauthorized: Invalid or missing Bearer token").into_response();
+
+    if state.oauth_store.is_some() {
+        if let Ok(val) = axum::http::HeaderValue::from_str(&format!(
+            r#"Bearer resource_metadata="{}/.well-known/oauth-protected-resource""#,
+            state.base_url
+        )) {
+            response.headers_mut().insert("WWW-Authenticate", val);
+        }
+    }
+
+    response
 }

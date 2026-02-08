@@ -27,7 +27,7 @@ async fn test_tool_exhaustive_search_real() {
 
     let ctx = create_context();
     let tool = ExhaustiveSearchTool;
-    
+
     let input = json!({
         "query": "transformer attention",
         "limit": 5,
@@ -38,8 +38,9 @@ async fn test_tool_exhaustive_search_real() {
 
     match result {
         Ok(output) => {
-            let json: serde_json::Value = serde_json::from_str(&output).expect("Should be valid JSON");
-            
+            let json: serde_json::Value =
+                serde_json::from_str(&output).expect("Should be valid JSON");
+
             // ExhaustiveSearchTool returns a JSON array of papers directly
             if let Some(papers) = json.as_array() {
                 assert!(!papers.is_empty(), "Should find papers for 'transformer attention'");
@@ -61,7 +62,7 @@ async fn test_tool_author_network_real() {
 
     let ctx = create_context();
     let tool = AuthorNetworkTool;
-    
+
     // Geoffrey Hinton
     let input = json!({
         "authorId": "1741101",
@@ -73,15 +74,18 @@ async fn test_tool_author_network_real() {
 
     match result {
         Ok(output) => {
-            let json: serde_json::Value = serde_json::from_str(&output).expect("Should be valid JSON");
+            let json: serde_json::Value =
+                serde_json::from_str(&output).expect("Should be valid JSON");
             if let Some(collaborators) = json["collaborators"].as_array() {
                 if collaborators.is_empty() {
-                    println!("Warning: No collaborators found (likely rate limited or empty response)");
+                    println!(
+                        "Warning: No collaborators found (likely rate limited or empty response)"
+                    );
                 } else {
                     println!("Found {} collaborators via tool", collaborators.len());
                 }
             } else {
-                 panic!("Expected 'collaborators' array in response: {:?}", json);
+                panic!("Expected 'collaborators' array in response: {:?}", json);
             }
         }
         Err(e) => {
@@ -94,10 +98,10 @@ async fn test_tool_author_network_real() {
 async fn test_tool_fwci_real() {
     let ctx = create_context();
     let tool = FieldWeightedImpactTool;
-    
+
     // "Attention Is All You Need"
     let input = json!({
-        "paperIds": ["649def34f8be52c8b66281af98ae884c09aef38b"], 
+        "paperIds": ["649def34f8be52c8b66281af98ae884c09aef38b"],
         "responseFormat": "json"
     });
 
@@ -105,12 +109,13 @@ async fn test_tool_fwci_real() {
 
     match result {
         Ok(output) => {
-            let json: serde_json::Value = serde_json::from_str(&output).expect("Should be valid JSON");
+            let json: serde_json::Value =
+                serde_json::from_str(&output).expect("Should be valid JSON");
             let results = json["results"].as_array().expect("Should have results array");
             if let Some(first) = results.first() {
                 let fwci = first["fwci"].as_f64().unwrap_or(0.0);
-                 println!("FWCI: {}", fwci);
-                 // Note: fwci might be null/0 if baselines failed, so we don't strictly assert > 0 here to avoid flaky tests
+                println!("FWCI: {}", fwci);
+                // Note: fwci might be null/0 if baselines failed, so we don't strictly assert > 0 here to avoid flaky tests
             } else {
                 println!("No results returned");
             }

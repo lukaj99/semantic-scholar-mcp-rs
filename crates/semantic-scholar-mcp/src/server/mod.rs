@@ -10,6 +10,7 @@
 //! - Broadcast channels for live event delivery
 //! - Background cleanup of stale sessions
 
+pub mod oauth;
 pub mod session;
 pub mod stdio;
 pub mod transport;

@@ -7,7 +7,7 @@
 | Command | Description |
 |---------|-------------|
 | `cargo build --release` | Build optimized binary (~6.6MB) |
-| `cargo test` | Run 39 unit/doc tests |
+| `cargo test` | Run 602 unit/integration tests |
 | `cargo test --features integration` | Run live API tests |
 | `./target/release/semantic-scholar-mcp --help` | CLI help |
 
@@ -34,7 +34,14 @@ semantic-scholar-mcp-rs/
 │       ├── mod.rs           # McpServer entry point
 │       ├── stdio.rs         # stdio transport (Claude Desktop)
 │       ├── transport.rs     # HTTP/SSE transport (never-failing)
-│       └── session.rs       # Session manager with ring buffer
+│       ├── session.rs       # Session manager with ring buffer
+│       └── oauth/           # OAuth 2.0 authorization server
+│           ├── mod.rs       # Module root, re-exports OAuthStore
+│           ├── types.rs     # OAuthClient, AuthCode, AccessToken, RefreshToken
+│           ├── pkce.rs      # PKCE S256 verification (RFC 7636)
+│           ├── store.rs     # In-memory state (Arc<RwLock<HashMap>>)
+│           ├── login.rs     # HTML authorization page
+│           └── handlers.rs  # 6 axum endpoint handlers
 └── tests/
     ├── model_tests.rs       # Unit tests for models
     └── integration_tests.rs # Live API tests (--features integration)
@@ -114,6 +121,11 @@ The HTTP transport implements robust "mailbox" pattern for reliable connections:
 | `/sse` | GET | Legacy SSE (sends endpoint event) |
 | `/message` | POST | Legacy message endpoint |
 | `/sessions` | GET | Active session count |
+| `/.well-known/oauth-protected-resource` | GET | RFC 9728 resource metadata |
+| `/.well-known/oauth-authorization-server` | GET | RFC 8414 AS metadata |
+| `/register` | POST | Dynamic client registration (RFC 7591) |
+| `/authorize` | GET/POST | Authorization endpoint (login page) |
+| `/token` | POST | Token exchange (code→tokens, refresh) |
 
 ## API Client
 
@@ -172,9 +184,12 @@ docker compose up -d
 ```
 
 **Authentication:**
-This server uses **Bearer Token Authentication**.
+This server supports **two authentication methods**:
+1. **OAuth 2.0** (for Claude.ai Custom Connector) — automatic via MCP OAuth flow
+2. **Bearer Token** (for Claude Code) — `?token=` query param or `Authorization: Bearer` header
+
 - **Token:** `MCP_SERVER_AUTH_TOKEN` (set in `.env`)
-- **Magic Link:** `https://your-domain.com?token=YOUR_TOKEN`
+- OAuth login password = the same `MCP_SERVER_AUTH_TOKEN`
 
 **Add to Claude Code:**
 ```bash
@@ -182,11 +197,13 @@ This server uses **Bearer Token Authentication**.
 claude mcp add --transport http semantic-scholar "https://scholar.jovanovic.org.uk/mcp?token=YOUR_TOKEN"
 ```
 
-**Claude.ai Integration:**
+**Claude.ai Integration (OAuth 2.0):**
 1. Navigate to Settings > Integrations
 2. Add Custom Connector
-3. Enter URL: `https://scholar.jovanovic.org.uk?token=YOUR_TOKEN`
-4. The server will auto-discover capabilities via `/.well-known/mcp.json` and inject the token into endpoints.
+3. Enter URL: `https://scholar.jovanovic.org.uk`
+4. Claude.ai auto-discovers OAuth endpoints via `/.well-known/oauth-protected-resource`
+5. You'll be prompted to enter the server password (= `MCP_SERVER_AUTH_TOKEN`)
+6. After approval, Claude.ai gets an OAuth access token and can call MCP tools
 
 **Discovery Endpoint:** `GET /.well-known/mcp.json`
 ```json
@@ -194,11 +211,10 @@ claude mcp add --transport http semantic-scholar "https://scholar.jovanovic.org.
   "name": "semantic-scholar-mcp",
   "version": "0.1.0",
   "capabilities": { "tools": true, "resources": false, "prompts": false },
-  "auth": { "type": "none" },
   "endpoints": {
-    "mcp": "https://scholar.jovanovic.org.uk/mcp?token=YOUR_TOKEN",
-    "sse": "https://scholar.jovanovic.org.uk/sse?token=YOUR_TOKEN",
-    "health": "https://scholar.jovanovic.org.uk/health?token=YOUR_TOKEN"
+    "mcp": "https://scholar.jovanovic.org.uk/mcp",
+    "sse": "https://scholar.jovanovic.org.uk/sse",
+    "health": "https://scholar.jovanovic.org.uk/health"
   }
 }
 ```

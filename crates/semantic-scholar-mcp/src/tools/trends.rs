@@ -68,9 +68,8 @@ impl McpTool for ResearchTrendsTool {
         let limit = 100;
 
         // Build filter parameters
-        let filters = vec![
-            ("year".to_string(), format!("{}-{}", params.year_start, params.year_end))
-        ];
+        let filters =
+            vec![("year".to_string(), format!("{}-{}", params.year_start, params.year_end))];
 
         loop {
             if all_papers.len() >= max_results as usize {
