@@ -355,7 +355,7 @@ async fn build_sse_stream(
             match result {
                 Ok(event) => Some(Ok(event.to_sse_event())),
                 Err(e) => {
-                    tracing::debug!(error = %e, "Broadcast lag, client will catch up");
+                    tracing::debug!(error = %e, "Broadcast receiver lagged, events dropped (recoverable on reconnect via ring buffer)");
                     None
                 }
             }
@@ -441,7 +441,7 @@ async fn build_sse_stream_with_endpoint(
             match result {
                 Ok(event) => Some(Ok(event.to_sse_event())),
                 Err(e) => {
-                    tracing::debug!(error = %e, "Broadcast lag, client will catch up");
+                    tracing::debug!(error = %e, "Broadcast receiver lagged, events dropped (recoverable on reconnect via ring buffer)");
                     None
                 }
             }

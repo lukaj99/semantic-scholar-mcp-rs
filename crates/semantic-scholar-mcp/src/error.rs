@@ -8,9 +8,9 @@ use std::time::Duration;
 /// Errors from the HTTP client layer.
 #[derive(thiserror::Error, Debug)]
 pub enum ClientError {
-    /// HTTP transport error (connection, DNS, TLS, etc.)
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
+    /// Response body error (e.g. JSON deserialization via reqwest)
+    #[error("Response error: {0}")]
+    Response(#[from] reqwest::Error),
 
     /// Middleware error
     #[error("Middleware error: {0}")]

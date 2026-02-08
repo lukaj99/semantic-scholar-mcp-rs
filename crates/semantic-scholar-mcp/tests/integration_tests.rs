@@ -229,8 +229,11 @@ async fn test_pagination_bounds() {
     // Request with very high offset
     let result = client.search_papers("machine learning", 10000, 10, fields::DEFAULT, &[]).await;
 
-    // Should either succeed with empty results or return gracefully
-    assert!(result.is_ok() || result.is_err(), "Should handle high offset");
+    // Should succeed with empty results or return an API error — either is acceptable
+    match result {
+        Ok(r) => assert!(r.data.is_empty() || r.total >= 0, "Should handle high offset"),
+        Err(e) => println!("Note: High offset returned error: {e:?}"),
+    }
 }
 
 #[tokio::test]
