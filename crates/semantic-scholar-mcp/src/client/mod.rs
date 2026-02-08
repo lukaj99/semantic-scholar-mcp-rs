@@ -399,9 +399,11 @@ impl SemanticScholarClient {
             ("fields".to_string(), fields.join(",")),
         ];
 
-        // API returns either paper directly or error
-        let result: Option<Paper> = self.get(&url, &params).await.ok();
-        Ok(result)
+        match self.get(&url, &params).await {
+            Ok(paper) => Ok(Some(paper)),
+            Err(ClientError::NotFound { .. }) => Ok(None),
+            Err(e) => Err(e),
+        }
     }
 
     /// Get detailed author information for a paper.

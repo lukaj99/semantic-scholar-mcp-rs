@@ -2,14 +2,15 @@
 //!
 //! Uses `thiserror` for structured error handling with automatic `From` implementations.
 
+use std::error::Error;
 use std::time::Duration;
 
 /// Errors from the HTTP client layer.
 #[derive(thiserror::Error, Debug)]
 pub enum ClientError {
-    /// HTTP transport error (connection, DNS, TLS, etc.)
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
+    /// Response body error (e.g. JSON deserialization via reqwest)
+    #[error("Response error: {0}")]
+    Response(#[from] reqwest::Error),
 
     /// Middleware error
     #[error("Middleware error: {0}")]
@@ -90,8 +91,23 @@ impl ClientError {
 
     /// Returns true if this error is retryable.
     #[must_use]
-    pub const fn is_retryable(&self) -> bool {
-        matches!(self, Self::RateLimited { .. } | Self::Timeout(_) | Self::Server { .. })
+    pub fn is_retryable(&self) -> bool {
+        match self {
+            Self::RateLimited { .. } | Self::Timeout(_) | Self::Server { .. } => true,
+            Self::Middleware(e) => {
+                // reqwest-retry wraps errors through RetryError -> anyhow -> Middleware,
+                // so walk the full source chain to find the underlying reqwest::Error
+                let mut source: Option<&(dyn Error + 'static)> = Some(e);
+                while let Some(err) = source {
+                    if let Some(reqwest_err) = err.downcast_ref::<reqwest::Error>() {
+                        return reqwest_err.is_timeout() || reqwest_err.is_connect();
+                    }
+                    source = err.source();
+                }
+                false
+            }
+            _ => false,
+        }
     }
 
     /// Get the retry-after duration if this is a rate limit error.
@@ -191,6 +207,11 @@ mod tests {
 
         assert!(!ClientError::not_found("paper123").is_retryable());
         assert!(!ClientError::bad_request("invalid query").is_retryable());
+
+        // Middleware-wrapped non-reqwest errors are not retryable
+        let middleware_err =
+            reqwest_middleware::Error::Middleware(anyhow::anyhow!("some other error"));
+        assert!(!ClientError::Middleware(middleware_err).is_retryable());
     }
 
     #[test]
