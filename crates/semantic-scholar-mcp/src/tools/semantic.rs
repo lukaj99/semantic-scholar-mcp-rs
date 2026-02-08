@@ -28,7 +28,7 @@ impl McpTool for SemanticSearchTool {
         json!({
             "type": "object",
             "properties": {
-                "seed_paper_id": {
+                "seedPaperId": {
                     "type": "string",
                     "description": "Paper ID to find similar papers for"
                 },
@@ -55,7 +55,7 @@ impl McpTool for SemanticSearchTool {
                     "default": "markdown"
                 }
             },
-            "required": ["seed_paper_id"]
+            "required": ["seedPaperId"]
         })
     }
 

@@ -287,6 +287,7 @@ pub struct CitationResult {
     pub next: Option<i32>,
 
     /// Citation data.
+    #[serde(default)]
     pub data: Vec<CitationContext>,
 }
 
