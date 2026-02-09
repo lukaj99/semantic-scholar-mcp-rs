@@ -156,24 +156,21 @@ fn format_csv(papers: &[Paper], include_abstract: bool) -> String {
     }
 
     for paper in papers {
+        let id = csv_escape(&paper.paper_id);
         let title = csv_escape(paper.title_or_default());
         let authors = csv_escape(&paper.author_names());
         let year = paper.year.map_or(String::new(), |y| y.to_string());
         let venue = csv_escape(paper.venue.as_deref().unwrap_or(""));
         let citations = paper.citations().to_string();
-        let doi = paper.doi().unwrap_or("");
+        let doi = csv_escape(paper.doi().unwrap_or(""));
 
         if include_abstract {
             let abs = csv_escape(paper.r#abstract.as_deref().unwrap_or(""));
             output.push_str(&format!(
-                "{},{title},{authors},{year},{venue},{citations},{doi},{abs}\n",
-                paper.paper_id
+                "{id},{title},{authors},{year},{venue},{citations},{doi},{abs}\n"
             ));
         } else {
-            output.push_str(&format!(
-                "{},{title},{authors},{year},{venue},{citations},{doi}\n",
-                paper.paper_id
-            ));
+            output.push_str(&format!("{id},{title},{authors},{year},{venue},{citations},{doi}\n"));
         }
     }
 

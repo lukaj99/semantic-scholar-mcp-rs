@@ -8,8 +8,10 @@
 
 mod middleware;
 
+use std::sync::Arc;
 use std::time::Duration;
 
+use governor::{Quota, RateLimiter, DefaultDirectRateLimiter};
 use moka::future::Cache;
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -20,6 +22,9 @@ use crate::error::{ClientError, ClientResult};
 use crate::models::{
     Author, AuthorSearchResult, BulkSearchResult, Paper, SearchResult, SnippetSearchResult,
 };
+
+/// Type alias for the global rate limiter.
+type SharedRateLimiter = Arc<DefaultDirectRateLimiter>;
 
 /// Semantic Scholar API client.
 #[derive(Clone)]
@@ -39,11 +44,11 @@ pub struct SemanticScholarClient {
     /// Recommendations API base URL.
     recommendations_api_url: String,
 
-    /// Rate limit delay.
-    rate_limit_delay: std::time::Duration,
+    /// Global rate limiter for normal requests.
+    rate_limiter: SharedRateLimiter,
 
-    /// Batch rate limit delay.
-    batch_rate_limit_delay: std::time::Duration,
+    /// Global rate limiter for batch requests.
+    batch_rate_limiter: SharedRateLimiter,
 }
 
 impl SemanticScholarClient {
@@ -85,14 +90,25 @@ impl SemanticScholarClient {
             .time_to_live(config.cache_ttl)
             .build();
 
+        // Initialize global rate limiters from config delays
+        let rate_limit = (1.0 / config.rate_limit_delay.as_secs_f64()).round() as u32;
+        let batch_limit = (1.0 / config.batch_rate_limit_delay.as_secs_f64()).round() as u32;
+
+        let rate_limiter = Arc::new(RateLimiter::direct(Quota::per_second(
+            std::num::NonZeroU32::new(rate_limit.max(1)).unwrap(),
+        )));
+        let batch_rate_limiter = Arc::new(RateLimiter::direct(Quota::per_second(
+            std::num::NonZeroU32::new(batch_limit.max(1)).unwrap(),
+        )));
+
         Ok(Self {
             client,
             cache,
             api_key: config.api_key,
             graph_api_url: config.graph_api_url,
             recommendations_api_url: config.recommendations_api_url,
-            rate_limit_delay: config.rate_limit_delay,
-            batch_rate_limit_delay: config.batch_rate_limit_delay,
+            rate_limiter,
+            batch_rate_limiter,
         })
     }
 
@@ -532,8 +548,8 @@ impl SemanticScholarClient {
             return serde_json::from_value(cached).map_err(ClientError::from);
         }
 
-        // Rate limit
-        tokio::time::sleep(self.rate_limit_delay).await;
+        // Global rate limiting
+        self.rate_limiter.until_ready().await;
 
         let response = self.client.get(url).query(params).send().await?;
 
@@ -556,8 +572,8 @@ impl SemanticScholarClient {
     where
         T: serde::de::DeserializeOwned,
     {
-        // Rate limit (slower for batch)
-        tokio::time::sleep(self.batch_rate_limit_delay).await;
+        // Global rate limiting (batch-specific)
+        self.batch_rate_limiter.until_ready().await;
 
         let body_str = serde_json::to_string(body)?;
 

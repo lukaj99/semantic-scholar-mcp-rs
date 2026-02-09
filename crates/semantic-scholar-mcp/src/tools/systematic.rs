@@ -1,8 +1,10 @@
 //! Systematic review tools: prisma_search, screening_export, prisma_flow_diagram.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use chrono::Utc;
+use futures::stream::{FuturesUnordered, StreamExt};
 use serde_json::json;
 
 use super::{McpTool, ToolContext};
@@ -69,52 +71,73 @@ impl McpTool for PrismaSearchTool {
         let mut search_log = Vec::new();
         let mut results_per_query: HashMap<String, usize> = HashMap::new();
 
+        let mut futures = FuturesUnordered::new();
+
         for query in &params.queries {
-            let mut offset = 0;
-            let limit = 100;
-            let mut query_papers = Vec::new();
+            let client = Arc::clone(&ctx.client);
+            let q = query.clone();
+            let year_start = params.year_start;
+            let year_end = params.year_end;
+            let min_citations = params.min_citations;
+            let max_results = params.max_results_per_query;
 
-            // Build filter parameters
-            let mut filters: Vec<(String, String)> = Vec::new();
+            futures.push(async move {
+                let mut offset = 0;
+                let limit = 100;
+                let mut query_papers = Vec::new();
 
-            if let Some(min_year) = params.year_start {
-                if let Some(max_year) = params.year_end {
-                    filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
-                } else {
-                    filters.push(("year".to_string(), format!("{}-", min_year)));
-                }
-            } else if let Some(max_year) = params.year_end {
-                filters.push(("year".to_string(), format!("-{}", max_year)));
-            }
+                // Build filter parameters
+                let mut filters: Vec<(String, String)> = Vec::new();
 
-            if let Some(min_citations) = params.min_citations {
-                filters.push(("minCitationCount".to_string(), min_citations.to_string()));
-            }
-
-            // Paginate through results
-            loop {
-                if query_papers.len() >= params.max_results_per_query as usize {
-                    break;
+                if let Some(min_year) = year_start {
+                    if let Some(max_year) = year_end {
+                        filters.push(("year".to_string(), format!("{}-{}", min_year, max_year)));
+                    } else {
+                        filters.push(("year".to_string(), format!("{}-", min_year)));
+                    }
+                } else if let Some(max_year) = year_end {
+                    filters.push(("year".to_string(), format!("-{}", max_year)));
                 }
 
-                let result = ctx
-                    .client
-                    .search_papers(query, offset, limit, fields::DEFAULT, &filters)
-                    .await
-                    .map_err(ToolError::from)?;
-
-                for paper in result.data {
-                    query_papers.push(paper);
+                if let Some(min_citations) = min_citations {
+                    filters.push(("minCitationCount".to_string(), min_citations.to_string()));
                 }
 
-                if result.next.is_none() {
-                    break;
-                }
-                offset = result.next.unwrap_or(offset + limit);
-            }
+                // Paginate through results
+                loop {
+                    if query_papers.len() >= max_results as usize {
+                        break;
+                    }
 
+                    let result = client
+                        .search_papers(&q, offset, limit, fields::DEFAULT, &filters)
+                        .await;
+
+                    match result {
+                        Ok(res) => {
+                            let count = res.data.len();
+                            query_papers.extend(res.data);
+
+                            if res.next.is_none() || count == 0 {
+                                break;
+                            }
+                            offset = res.next.unwrap_or(offset + limit);
+                        }
+                        Err(e) => {
+                            tracing::warn!(query = %q, error = %e, "Search query failed");
+                            break;
+                        }
+                    }
+                }
+                (q, query_papers)
+            });
+        }
+
+        while let Some((query, query_papers)) = futures.next().await {
             let mut query_new = 0;
             let mut query_duplicate = 0;
+
+            let total_retrieved = query_papers.len();
 
             for paper in query_papers {
                 if all_papers.contains_key(&paper.paper_id) {
@@ -125,10 +148,10 @@ impl McpTool for PrismaSearchTool {
                 }
             }
 
-            results_per_query.insert(query.clone(), query_new + query_duplicate);
+            results_per_query.insert(query.clone(), total_retrieved);
             search_log.push(json!({
                 "query": query,
-                "retrieved": query_new + query_duplicate,
+                "retrieved": total_retrieved,
                 "new_unique": query_new,
                 "duplicates": query_duplicate,
                 "timestamp": Utc::now().to_rfc3339()
@@ -213,6 +236,11 @@ impl McpTool for ScreeningExportTool {
                 "includeTldr": {
                     "type": "boolean",
                     "default": false
+                },
+                "responseFormat": {
+                    "type": "string",
+                    "enum": ["markdown", "json"],
+                    "default": "json"
                 }
             },
             "required": ["paperIds"]
@@ -236,6 +264,40 @@ impl McpTool for ScreeningExportTool {
             .get_papers_batch(&params.paper_ids, &field_list)
             .await
             .map_err(ToolError::from)?;
+
+        if matches!(params.response_format, ResponseFormat::Markdown) {
+            let mut output = String::from("# Screening Export\n\n");
+            for (i, paper) in papers.iter().enumerate() {
+                output.push_str(&format!("### {}. {}\n", i + 1, paper.title_or_default()));
+                output.push_str(&format!(
+                    "**ID:** `{}` | **Year:** {} | **Citations:** {}\n",
+                    paper.paper_id,
+                    paper.year.unwrap_or(0),
+                    paper.citations()
+                ));
+                output.push_str(&format!("**Authors:** {}\n", paper.author_names()));
+                if let Some(venue) = &paper.venue {
+                    output.push_str(&format!("**Venue:** {}\n", venue));
+                }
+                if let Some(doi) = paper.doi() {
+                    output.push_str(&format!("**DOI:** {}\n", doi));
+                }
+
+                if params.include_tldr {
+                    if let Some(tldr) = paper.tldr_text() {
+                        output.push_str(&format!("\n> **TLDR:** {}\n", tldr));
+                    }
+                }
+
+                if params.include_abstract {
+                    if let Some(abs) = &paper.r#abstract {
+                        output.push_str(&format!("\n**Abstract:**\n{}\n", abs));
+                    }
+                }
+                output.push_str("\n---\n\n");
+            }
+            return Ok(output);
+        }
 
         let mut export_data = Vec::new();
 

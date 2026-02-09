@@ -230,6 +230,14 @@ pub struct ScreeningExportInput {
     /// Include AI-generated TLDRs.
     #[serde(default)]
     pub include_tldr: bool,
+
+    /// Output format.
+    #[serde(default = "default_json")]
+    pub response_format: ResponseFormat,
+}
+
+fn default_json() -> ResponseFormat {
+    ResponseFormat::Json
 }
 
 /// Input for reference export.

@@ -74,13 +74,7 @@ impl McpTool for AuthorNetworkTool {
         loop {
             let result = ctx
                 .client
-                .search_papers(
-                    &format!("author:{}", params.author_id),
-                    offset,
-                    limit,
-                    fields::DEFAULT,
-                    &[],
-                )
+                .get_author_papers(&params.author_id, offset, limit, fields::DEFAULT)
                 .await;
 
             match result {
@@ -91,7 +85,13 @@ impl McpTool for AuthorNetworkTool {
                     }
                     offset = search_result.next.unwrap_or(offset + limit);
                 }
-                Err(_) => break,
+                Err(e) => {
+                    if papers.is_empty() {
+                        return Err(ToolError::from(e));
+                    }
+                    tracing::warn!(error = %e, "Failed to fetch more papers for author network");
+                    break;
+                }
             }
         }
 

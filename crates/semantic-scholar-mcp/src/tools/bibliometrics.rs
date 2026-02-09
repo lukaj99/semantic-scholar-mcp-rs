@@ -1,8 +1,10 @@
 //! Bibliometric analysis tools: FWCI, highly cited, citation half-life, co-citation, bibliographic coupling, hot papers.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use chrono::{Datelike, Utc};
+use futures::stream::{FuturesUnordered, StreamExt};
 use serde_json::json;
 
 use super::{McpTool, ToolContext};
@@ -328,37 +330,62 @@ impl McpTool for HighlyCitedPapersTool {
     }
 }
 
-/// Estimate the citation threshold for the top `percentile`% of a field+year.
-///
-/// Uses `search_result.total` (the full population size) to compute the target rank,
-/// then reads the citation count at that rank from the desc-sorted batch. This is
-/// approximate: if the target rank exceeds the batch size, we return 0.
 async fn get_percentile_threshold(
     ctx: &ToolContext,
     field: &str,
     year: i32,
     percentile: f64,
 ) -> i32 {
-    let Some(search_result) =
-        fetch_field_year_citations(ctx, field, year, Some("citationCount:desc")).await
-    else {
+    let current_search =
+        fetch_field_year_citations(ctx, field, year, Some("citationCount:desc")).await;
+
+    let Some(mut result) = current_search else {
         return 0;
     };
 
-    let cites: Vec<i32> = search_result.data.iter().map(|p| p.citations()).collect();
+    let total = result.total as usize;
+    let target_rank = ((total as f64 * percentile / 100.0) as usize).max(1) - 1;
+
+    let mut cites: Vec<i32> = result.data.iter().map(|p| p.citations()).collect();
+    let mut pages_fetched = 1;
+    let max_pages = 5; // Fetch up to 5000 papers to estimate threshold
+
+    while target_rank >= cites.len() && pages_fetched < max_pages {
+        if let Some(token) = result.token {
+            let next_result = ctx
+                .client
+                .search_papers_bulk(
+                    field,
+                    Some(&token),
+                    &["citationCount"],
+                    Some("citationCount:desc"),
+                    &[("year".to_string(), format!("{year}-{year}"))],
+                )
+                .await;
+
+            match next_result {
+                Ok(next) => {
+                    cites.extend(next.data.iter().map(|p| p.citations()));
+                    result = next;
+                    pages_fetched += 1;
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, field, year, "Failed to fetch next page for threshold");
+                    break;
+                }
+            }
+        } else {
+            break;
+        }
+    }
+
     if cites.is_empty() {
         return 0;
     }
 
-    let total = search_result.total as usize;
-    let target_rank = ((total as f64 * percentile / 100.0) as usize).max(1) - 1;
-
-    // If the target rank exceeds our batch, we can't determine the threshold
-    if target_rank >= cites.len() {
-        return 0;
-    }
-
-    cites[target_rank]
+    // Use the best available rank
+    let final_rank = target_rank.min(cites.len() - 1);
+    cites[final_rank]
 }
 
 /// Citation half-life calculator.
@@ -575,18 +602,24 @@ impl McpTool for CocitationAnalysisTool {
 
         // Count co-citations
         let mut cocitation_counts: HashMap<String, i32> = HashMap::new();
+        let mut futures = FuturesUnordered::new();
 
         for citation in &citations.data {
             if let Some(ref citing_paper) = citation.paper {
-                // Get references of this citing paper
-                if let Ok(refs) =
-                    ctx.client.get_references(&citing_paper.paper_id, 0, 100, &["paperId"]).await
-                {
-                    for ref_paper in refs.data {
-                        if let Some(cited) = ref_paper.paper {
-                            if cited.paper_id != params.paper_id {
-                                *cocitation_counts.entry(cited.paper_id).or_insert(0) += 1;
-                            }
+                let client = Arc::clone(&ctx.client);
+                let citing_id = citing_paper.paper_id.clone();
+                futures.push(async move {
+                    client.get_references(&citing_id, 0, 100, &["paperId"]).await
+                });
+            }
+        }
+
+        while let Some(result) = futures.next().await {
+            if let Ok(refs) = result {
+                for ref_paper in refs.data {
+                    if let Some(cited) = ref_paper.paper {
+                        if cited.paper_id != params.paper_id {
+                            *cocitation_counts.entry(cited.paper_id).or_insert(0) += 1;
                         }
                     }
                 }
@@ -746,9 +779,18 @@ impl McpTool for BibliographicCouplingTool {
 
         // For each reference, find other papers that cite it
         let mut coupling_counts: HashMap<String, i32> = HashMap::new();
+        let mut futures = FuturesUnordered::new();
 
         for ref_id in focal_ref_ids.iter().take(params.max_refs_to_check as usize) {
-            if let Ok(citers) = ctx.client.get_citations(ref_id, 0, 100, &["paperId"]).await {
+            let client = Arc::clone(&ctx.client);
+            let rid = ref_id.clone();
+            futures.push(async move {
+                client.get_citations(&rid, 0, 100, &["paperId"]).await
+            });
+        }
+
+        while let Some(result) = futures.next().await {
+            if let Ok(citers) = result {
                 for citer in citers.data {
                     if let Some(citing) = citer.paper {
                         if citing.paper_id != params.paper_id {

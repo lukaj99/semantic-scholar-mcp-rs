@@ -74,8 +74,9 @@ async fn test_author_network_basic() {
         .await;
 
     // Author's papers with collaborators
+    // Author's papers with collaborators
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/main_author/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
             sample_paper_with_authors(
                 "p1",
@@ -121,8 +122,9 @@ async fn test_author_network_json_format() {
         .mount(&mock_server)
         .await;
 
+    // Author's papers with collaborators
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/json_author/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
             sample_paper_with_authors(
                 "p1",
@@ -166,7 +168,7 @@ async fn test_author_network_min_shared_papers() {
 
     // One collaborator appears 3 times, another only once
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/filter_author/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
             sample_paper_with_authors(
                 "p1",
@@ -221,8 +223,9 @@ async fn test_author_network_max_collaborators() {
         .mount(&mock_server)
         .await;
 
+    // Author's papers with collaborators
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/max_author/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
             sample_paper_with_authors(
                 "p1",
@@ -272,7 +275,7 @@ async fn test_author_network_no_collaborators() {
 
     // Author has papers but no co-authors
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/solo_author/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![
             sample_paper_with_authors("p1", "Solo Paper", vec![("solo_author", "Solo Author")]),
         ])))
@@ -300,8 +303,9 @@ async fn test_author_network_no_papers() {
         .mount(&mock_server)
         .await;
 
+    // Author's papers with collaborators
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/no_papers/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(search_result(vec![])))
         .mount(&mock_server)
         .await;
@@ -350,7 +354,7 @@ async fn test_author_network_pagination() {
 
     // First page has more
     Mock::given(method("GET"))
-        .and(path("/graph/v1/paper/search"))
+        .and(path("/graph/v1/author/paginated/papers"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "total": 200,
             "offset": 0,
