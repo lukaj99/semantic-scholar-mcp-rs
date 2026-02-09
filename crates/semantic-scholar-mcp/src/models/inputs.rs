@@ -699,6 +699,7 @@ pub struct PrismaScreeningData {
 #[serde(rename_all = "camelCase")]
 pub struct PrismaEligibilityData {
     /// Reports sought for retrieval.
+    #[serde(default)]
     pub reports_sought: i32,
 
     /// Reports not retrieved.
@@ -706,9 +707,11 @@ pub struct PrismaEligibilityData {
     pub reports_not_retrieved: i32,
 
     /// Reports assessed for eligibility.
+    #[serde(default)]
     pub reports_assessed: i32,
 
     /// Reports excluded.
+    #[serde(default)]
     pub reports_excluded: i32,
 
     /// Exclusion reasons.
@@ -721,9 +724,11 @@ pub struct PrismaEligibilityData {
 #[serde(rename_all = "camelCase")]
 pub struct PrismaIncludedData {
     /// Studies included.
+    #[serde(default)]
     pub studies_included: i32,
 
     /// Reports included.
+    #[serde(default)]
     pub reports_included: i32,
 }
 
